@@ -1,0 +1,23 @@
+{
+  "//": "Pro-plan schedule. Vercel Hobby allows only 2 cron jobs at a maximum of once per day, so the shipped vercel.json is deliberately minimal. On Pro, replace vercel.json with this file: `mv vercel.pro.json vercel.json` and redeploy.",
+  "//tz": "Vercel cron runs in UTC. Times below assume Central Daylight Time (UTC-5). In winter (CST, UTC-6) add one hour to each.",
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "crons": [
+    {
+      "path": "/api/cron/poll",
+      "schedule": "*/5 * * * *"
+    },
+    {
+      "path": "/api/cron/report?shift=AM",
+      "schedule": "7 18 * * *"
+    },
+    {
+      "path": "/api/cron/report?shift=PM",
+      "schedule": "7 3 * * *"
+    },
+    {
+      "path": "/api/cron/report?shift=DAY",
+      "schedule": "23 5 * * *"
+    }
+  ]
+}

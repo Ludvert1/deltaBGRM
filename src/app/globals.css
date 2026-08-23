@@ -1,26 +1,53 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --bg: #f5f7fa;
+  --panel: #ffffff;
+  --line: #e2e7ee;
+  --fg: #10151c;
+  --dim: #5c6675;
+  --accent: #0b63c5;
+  --red: #c62828;
+  --amber: #b26a00;
+  --green: #1b7a45;
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    --bg: #0b0f14;
+    --panel: #141a21;
+    --line: #232c37;
+    --fg: #e9eef4;
+    --dim: #93a1b1;
+    --accent: #8ab4f8;
+    --red: #ef5350;
+    --amber: #e0a020;
+    --green: #4caf80;
   }
 }
 
+@theme inline {
+  --color-bg: var(--bg);
+  --color-panel: var(--panel);
+  --color-line: var(--line);
+  --color-fg: var(--fg);
+  --color-dim: var(--dim);
+  --color-accent: var(--accent);
+  --color-red: var(--red);
+  --color-amber: var(--amber);
+  --color-green: var(--green);
+}
+
+html,
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--bg);
+  color: var(--fg);
+  font-family: ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+    "Helvetica Neue", Arial, sans-serif;
+}
+
+code,
+pre,
+.mono {
+  font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
 }

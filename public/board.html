@@ -1,0 +1,4412 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Delta AUS Bagroom · Live Operations</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700;800;900&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #050912;
+  --bg-2: #0A1326;
+  --row-base: #0E1A38;
+  --row-alt: #142346;
+  --row-line: #1E3160;
+  --gold: #FFB81C;
+  --gold-bright: #FFCB4E;
+  --white: #FFFFFF;
+  --text-dim: #8FA3C5;
+  --text-muted: #5A6F95;
+  --blue: #4F8FFF;
+  --blue-bright: #7FAFFF;
+  --cyan: #22D3EE;
+  --amber: #FBBF24;
+  --orange: #FB923C;
+  --red: #EF4444;
+  --red-glow: #F87171;
+  --green: #22C55E;
+  --green-glow: #4ADE80;
+  --purple: #A78BFA;
+  --pink: #EC4899;
+  --delta-blue: #003366;
+  --delta-red: #C8102E;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body {
+  background: var(--bg);
+  color: var(--white);
+  font-family: 'Barlow Condensed', 'Arial Narrow', sans-serif;
+  height: 100vh;
+  overflow: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+body {
+  background:
+    radial-gradient(ellipse 80% 60% at 50% 0%, rgba(255, 184, 28, 0.04), transparent 70%),
+    linear-gradient(180deg, #050912 0%, #0A1326 100%);
+  display: flex;
+  flex-direction: column;
+}
+
+/* ============ TOP BAR ============ */
+.topbar {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  padding: 1vh 1.5vw;
+  border-bottom: 2px solid var(--delta-red);
+  background: linear-gradient(180deg, var(--bg-2), rgba(10,19,38,0.5));
+  flex-shrink: 0;
+}
+.brand { display: flex; align-items: center; gap: 0.9vw; }
+.delta-widget { width: 3vw; height: 3vw; min-width: 42px; min-height: 42px; }
+.delta-widget svg { width: 100%; height: 100%; }
+.brand-text { display: flex; flex-direction: column; line-height: 1; }
+.brand-title {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-weight: 800;
+  font-size: clamp(17px, 1.8vw, 26px);
+  letter-spacing: 0.08em;
+  color: var(--white);
+  text-transform: uppercase;
+}
+.brand-sub {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: clamp(9px, 0.8vw, 12px);
+  color: var(--gold);
+  letter-spacing: 0.2em;
+  margin-top: 3px;
+  text-transform: uppercase;
+  font-weight: 600;
+}
+.header-title {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-weight: 900;
+  font-size: clamp(26px, 3.4vw, 50px);
+  letter-spacing: 0.16em;
+  color: var(--gold);
+  text-align: center;
+  text-shadow: 0 0 20px rgba(255, 184, 28, 0.35);
+  text-transform: uppercase;
+}
+.clock-area { display: flex; align-items: center; gap: 1vw; }
+.clock-block {
+  text-align: right;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  line-height: 1;
+}
+.clock {
+  font-family: 'JetBrains Mono', monospace;
+  font-weight: 700;
+  font-size: clamp(22px, 2.6vw, 38px);
+  color: var(--white);
+  font-variant-numeric: tabular-nums;
+}
+.clock .colon { color: var(--gold); animation: blink 1s steps(2) infinite; }
+@keyframes blink { 50% { opacity: 0.3; } }
+.clock-date {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: clamp(10px, 0.9vw, 14px);
+  color: var(--text-dim);
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  margin-top: 4px;
+  font-weight: 600;
+}
+.header-buttons { display: flex; gap: 6px; }
+.hdr-btn {
+  background: rgba(255,255,255,0.05);
+  border: 1px solid var(--row-line);
+  color: var(--text-dim);
+  padding: 7px 11px;
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  cursor: pointer;
+  border-radius: 4px;
+  font-weight: 700;
+}
+.hdr-btn:hover { background: var(--row-base); color: var(--white); border-color: var(--gold); }
+.hdr-btn.active { background: var(--gold); color: var(--delta-blue); border-color: var(--gold); }
+.hdr-btn .count {
+  display: inline-block;
+  margin-left: 4px;
+  background: var(--delta-red);
+  color: var(--white);
+  padding: 0 5px;
+  border-radius: 8px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  min-width: 16px;
+  text-align: center;
+}
+
+/* ============ KPI STRIP ============ */
+.kpi-strip {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 1px;
+  background: var(--row-line);
+  border-bottom: 2px solid var(--gold);
+  flex-shrink: 0;
+}
+.kpi-tile {
+  background: linear-gradient(180deg, rgba(0, 51, 102, 0.6), var(--bg-2));
+  padding: 0.7vh 1vw;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  position: relative;
+  overflow: hidden;
+  min-height: 64px;
+}
+.kpi-tile::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 3px;
+  height: 100%;
+  background: var(--gold);
+  opacity: 0.4;
+}
+.kpi-tile.good::after { background: var(--green); }
+.kpi-tile.warn::after { background: var(--amber); }
+.kpi-tile.bad::after { background: var(--red); }
+.kpi-label {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: clamp(9px, 0.8vw, 12px);
+  color: var(--text-dim);
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+.kpi-value {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: clamp(20px, 2vw, 30px);
+  font-weight: 700;
+  color: var(--white);
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+.kpi-tile.good .kpi-value { color: var(--green-glow); }
+.kpi-tile.warn .kpi-value { color: var(--amber); }
+.kpi-tile.bad .kpi-value { color: var(--red-glow); }
+.kpi-unit {
+  font-size: 0.55em;
+  color: var(--text-dim);
+  margin-left: 4px;
+  font-weight: 500;
+}
+.kpi-sub {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: clamp(10px, 0.85vw, 13px);
+  color: var(--text-muted);
+  letter-spacing: 0.08em;
+  margin-top: 3px;
+}
+
+/* ============ TABLE HEADER ============ */
+.table-header {
+  display: grid;
+  grid-template-columns: 1.2fr 0.85fr 1.2fr 1.3fr 1.1fr 0.65fr 0.8fr 0.85fr 0.65fr;
+  padding: 1vh 1.5vw;
+  background: linear-gradient(180deg, var(--delta-blue), rgba(0,51,102,0.6));
+  border-bottom: 2px solid var(--gold);
+  gap: 0.8vw;
+  flex-shrink: 0;
+}
+.table-header > div {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-weight: 700;
+  font-size: clamp(11px, 1.1vw, 16px);
+  color: var(--gold);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+.table-header .timer-col { text-align: center; color: var(--gold-bright); }
+.table-header .right { text-align: center; }
+
+/* ============ ROWS ============ */
+.rows-wrap {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+.rows-wrap::-webkit-scrollbar { width: 6px; }
+.rows-wrap::-webkit-scrollbar-track { background: var(--bg-2); }
+.rows-wrap::-webkit-scrollbar-thumb { background: var(--delta-blue); border-radius: 3px; }
+
+.row {
+  display: grid;
+  grid-template-columns: 1.2fr 0.85fr 1.2fr 1.3fr 1.1fr 0.65fr 0.8fr 0.85fr 0.65fr;
+  padding: 1.2vh 1.5vw;
+  gap: 0.8vw;
+  align-items: center;
+  background: var(--row-base);
+  border-bottom: 1px solid var(--row-line);
+  transition: background 0.3s ease;
+  min-height: 6.5vh;
+  cursor: pointer;
+}
+.row:nth-child(even) { background: var(--row-alt); }
+.row:hover { background: rgba(255, 184, 28, 0.08) !important; }
+
+/* State backgrounds */
+.row.r-soon { background: linear-gradient(90deg, rgba(34, 211, 238, 0.08), transparent 60%); }
+.row.r-soon:nth-child(even) { background: linear-gradient(90deg, rgba(34, 211, 238, 0.12), rgba(20, 35, 70, 0.6) 60%); }
+.row.r-prep { background: linear-gradient(90deg, rgba(251, 191, 36, 0.12), transparent 60%); }
+.row.r-prep:nth-child(even) { background: linear-gradient(90deg, rgba(251, 191, 36, 0.18), rgba(20, 35, 70, 0.6) 60%); }
+.row.r-imminent {
+  background: linear-gradient(90deg, rgba(251, 146, 60, 0.22), rgba(20, 35, 70, 0.4) 70%);
+  border-left: 4px solid var(--orange);
+}
+.row.r-critical {
+  background: linear-gradient(90deg, rgba(239, 68, 68, 0.35), rgba(20, 35, 70, 0.3) 80%);
+  border-left: 4px solid var(--red);
+  animation: row-pulse 1.4s ease-in-out infinite;
+}
+.row.r-departed {
+  background: linear-gradient(90deg, rgba(34, 197, 94, 0.14), transparent 70%);
+  border-left: 4px solid var(--green);
+  opacity: 0.65;
+}
+.row.r-canceled {
+  opacity: 0.5;
+  background: rgba(239, 68, 68, 0.06);
+}
+.row.r-canceled .flight, .row.r-canceled .sched, .row.r-canceled .dest {
+  text-decoration: line-through;
+  text-decoration-color: var(--red);
+}
+.row.r-archived { opacity: 0.35; }
+.row.has-gate-change {
+  animation: gate-flash 2.5s ease-in-out infinite;
+}
+
+@keyframes row-pulse {
+  0%, 100% { background: linear-gradient(90deg, rgba(239, 68, 68, 0.35), rgba(20, 35, 70, 0.3) 80%); }
+  50% { background: linear-gradient(90deg, rgba(239, 68, 68, 0.55), rgba(20, 35, 70, 0.2) 70%); }
+}
+@keyframes gate-flash {
+  0%, 100% { box-shadow: inset 0 0 0 0 rgba(79, 143, 255, 0); }
+  50% { box-shadow: inset 0 0 0 2px rgba(79, 143, 255, 0.6); }
+}
+
+/* ============ CELL CONTENTS ============ */
+.flight-cell { display: flex; flex-direction: column; gap: 3px; }
+.flight {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-weight: 800;
+  font-size: clamp(18px, 2vw, 30px);
+  color: var(--white);
+  letter-spacing: 0.04em;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  gap: 0.5vw;
+}
+.flight .op-badge {
+  display: inline-block;
+  padding: 2px 5px;
+  border-radius: 3px;
+  font-size: 0.38em;
+  font-family: 'JetBrains Mono', monospace;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  background: var(--delta-blue);
+  color: var(--cyan);
+  border: 1px solid rgba(34, 211, 238, 0.3);
+  text-transform: uppercase;
+  line-height: 1;
+}
+.flight .op-badge.mainline { background: rgba(79, 143, 255, 0.15); color: var(--blue); border-color: rgba(79, 143, 255, 0.4); }
+.tail-small {
+  font-family: 'JetBrains Mono', monospace;
+  font-weight: 600;
+  font-size: clamp(10px, 1vw, 14px);
+  color: var(--text-dim);
+  letter-spacing: 0.02em;
+}
+.reroute-inline {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: clamp(9px, 0.85vw, 12px);
+  color: var(--cyan);
+  letter-spacing: 0.06em;
+  margin-top: 2px;
+  background: rgba(34, 211, 238, 0.1);
+  padding: 1px 5px;
+  border-radius: 3px;
+  display: inline-block;
+  border: 1px solid rgba(34, 211, 238, 0.3);
+}
+.delay-reason-chip {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: clamp(9px, 0.85vw, 12px);
+  color: var(--orange);
+  letter-spacing: 0.06em;
+  margin-top: 2px;
+  background: rgba(251, 146, 60, 0.12);
+  padding: 1px 5px;
+  border-radius: 3px;
+  display: inline-block;
+  border: 1px solid rgba(251, 146, 60, 0.4);
+  text-transform: uppercase;
+  font-weight: 600;
+}
+
+.sched {
+  font-family: 'JetBrains Mono', monospace;
+  font-weight: 600;
+  font-size: clamp(14px, 1.5vw, 22px);
+  color: var(--white);
+  font-variant-numeric: tabular-nums;
+}
+
+.status-cell { display: flex; flex-direction: column; gap: 4px; align-items: flex-start; }
+.cutoff-time {
+  font-family: 'JetBrains Mono', monospace;
+  font-weight: 700;
+  font-size: clamp(14px, 1.5vw, 22px);
+  color: var(--gold-bright);
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+.status-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3vw;
+  padding: 0.25vh 0.5vw;
+  border-radius: 100px;
+  font-family: 'Barlow Condensed', sans-serif;
+  font-weight: 700;
+  font-size: clamp(9px, 0.85vw, 12px);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+.status-pill::before { content: ""; width: 5px; height: 5px; border-radius: 50%; }
+.pill-ontime { background: rgba(34, 197, 94, 0.15); color: var(--green-glow); }
+.pill-ontime::before { background: var(--green); }
+.pill-early { background: rgba(34, 211, 238, 0.15); color: var(--cyan); }
+.pill-early::before { background: var(--cyan); }
+.pill-delayed { background: rgba(251, 191, 36, 0.15); color: var(--amber); }
+.pill-delayed::before { background: var(--amber); }
+.pill-canceled { background: var(--red); color: var(--white); }
+.pill-canceled::before { background: var(--white); }
+.pill-departed { background: rgba(34, 197, 94, 0.22); color: var(--green-glow); }
+.pill-departed::before { background: var(--green); }
+.pill-boarding { background: rgba(79, 143, 255, 0.15); color: var(--blue); }
+.pill-boarding::before { background: var(--blue); }
+.new-etd-note {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: clamp(9px, 0.78vw, 11px);
+  color: var(--text-dim);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+/* TIMER */
+.timer-cell {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  text-align: center;
+}
+.timer {
+  font-family: 'JetBrains Mono', monospace;
+  font-weight: 700;
+  font-size: clamp(20px, 2.4vw, 36px);
+  font-variant-numeric: tabular-nums;
+  color: var(--white);
+  letter-spacing: 0.02em;
+  line-height: 1;
+}
+.timer-label {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: clamp(9px, 0.85vw, 12px);
+  letter-spacing: 0.16em;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  font-weight: 600;
+}
+.row.r-soon .timer { color: var(--cyan); }
+.row.r-soon .timer-label { color: var(--cyan); opacity: 0.7; }
+.row.r-prep .timer { color: var(--amber); text-shadow: 0 0 12px rgba(251, 191, 36, 0.35); }
+.row.r-prep .timer-label { color: var(--amber); opacity: 0.8; }
+.row.r-imminent .timer { color: var(--orange); text-shadow: 0 0 18px rgba(251, 146, 60, 0.55); }
+.row.r-imminent .timer-label { color: var(--orange); opacity: 0.8; }
+.row.r-critical .timer { color: var(--white); text-shadow: 0 0 24px rgba(255, 255, 255, 0.6), 0 0 50px var(--red); font-size: clamp(22px, 2.7vw, 40px); }
+.row.r-critical .timer-label { color: var(--white); }
+.row.r-departed .timer { color: var(--green-glow); }
+.row.r-departed .timer-label { color: var(--green); opacity: 0.7; }
+.row.r-canceled .timer, .row.r-canceled .timer-label { color: var(--text-dim); }
+
+/* Cart Out / Variance cell */
+.cartout-cell { display: flex; flex-direction: column; align-items: center; gap: 2px; }
+.cartout-time {
+  font-family: 'JetBrains Mono', monospace;
+  font-weight: 700;
+  font-size: clamp(13px, 1.4vw, 19px);
+  color: var(--white);
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+.cartout-time.empty { color: var(--text-muted); font-weight: 500; font-style: italic; font-size: clamp(11px, 1.1vw, 14px); }
+.variance {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: clamp(10px, 0.95vw, 14px);
+  letter-spacing: 0.08em;
+  font-weight: 700;
+  padding: 1px 6px;
+  border-radius: 3px;
+  text-transform: uppercase;
+}
+.variance.good { color: var(--green-glow); background: rgba(34, 197, 94, 0.12); border: 1px solid rgba(34, 197, 94, 0.3); }
+.variance.warn { color: var(--amber); background: rgba(251, 191, 36, 0.12); border: 1px solid rgba(251, 191, 36, 0.3); }
+.variance.bad { color: var(--red-glow); background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.3); }
+
+.gate-cell { text-align: center; position: relative; }
+.gate {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-weight: 800;
+  font-size: clamp(22px, 2.7vw, 38px);
+  color: var(--gold-bright);
+  text-align: center;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+.row.r-canceled .gate { color: var(--text-dim); }
+.gate-change-badge {
+  display: block;
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: clamp(9px, 0.85vw, 12px);
+  color: var(--blue-bright);
+  background: rgba(79, 143, 255, 0.18);
+  border: 1px solid rgba(79, 143, 255, 0.5);
+  padding: 1px 5px;
+  border-radius: 3px;
+  margin-top: 3px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  font-weight: 700;
+  animation: badge-pulse 1.8s ease-in-out infinite;
+}
+@keyframes badge-pulse {
+  0%, 100% { background: rgba(79, 143, 255, 0.18); }
+  50% { background: rgba(79, 143, 255, 0.4); }
+}
+
+.dest {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-weight: 900;
+  font-size: clamp(24px, 3vw, 42px);
+  color: var(--white);
+  letter-spacing: 0.06em;
+  line-height: 1;
+}
+
+.crew-cell { display: flex; flex-direction: column; gap: 3px; }
+.crew-line {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: clamp(11px, 1vw, 14px);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.crew-label {
+  color: var(--text-dim);
+  font-size: 0.78em;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  font-weight: 600;
+  min-width: 28px;
+}
+.crew-value {
+  color: var(--white);
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+.crew-value.empty { color: var(--text-muted); font-style: italic; font-weight: 400; }
+
+.carts-cell { display: flex; flex-direction: column; align-items: center; gap: 3px; }
+.carts {
+  font-family: 'JetBrains Mono', monospace;
+  font-weight: 700;
+  font-size: clamp(18px, 2.2vw, 30px);
+  color: var(--gold-bright);
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+.missing-bags-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: clamp(9px, 0.85vw, 12px);
+  color: var(--white);
+  background: var(--red);
+  padding: 1px 5px;
+  border-radius: 3px;
+  letter-spacing: 0.1em;
+  font-weight: 700;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+/* ============ EMPTY STATE ============ */
+.empty-state {
+  padding: 8vh 2vw;
+  text-align: center;
+  color: var(--text-dim);
+}
+.empty-state h2 {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: clamp(20px, 2.5vw, 34px);
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  color: var(--gold);
+  margin-bottom: 1vh;
+}
+
+/* ============ TOAST ============ */
+.toast {
+  position: fixed;
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  background: var(--bg-2);
+  border: 3px solid var(--red);
+  color: var(--white);
+  padding: 3vh 4vw;
+  border-radius: 8px;
+  font-family: 'Barlow Condensed', sans-serif;
+  font-weight: 800;
+  font-size: clamp(22px, 3vw, 44px);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  text-align: center;
+  z-index: 200;
+  display: none;
+  box-shadow: 0 0 80px rgba(239, 68, 68, 0.6), 0 0 160px rgba(239, 68, 68, 0.3);
+  animation: toast-pulse 1s ease-in-out infinite;
+}
+.toast.show { display: block; }
+.toast .sub { display: block; font-size: 0.42em; margin-top: 1vh; color: var(--gold); letter-spacing: 0.18em; }
+@keyframes toast-pulse {
+  0%, 100% { box-shadow: 0 0 80px rgba(239, 68, 68, 0.6), 0 0 160px rgba(239, 68, 68, 0.3); }
+  50% { box-shadow: 0 0 120px rgba(239, 68, 68, 0.9), 0 0 240px rgba(239, 68, 68, 0.5); }
+}
+
+/* ============ DRAWERS ============ */
+.drawer-backdrop {
+  position: fixed; inset: 0;
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(6px);
+  z-index: 100;
+  display: none;
+}
+.drawer-backdrop.show { display: block; }
+.drawer {
+  position: fixed;
+  top: 0; right: 0; bottom: 0;
+  width: min(720px, 96vw);
+  background: var(--bg-2);
+  border-left: 2px solid var(--gold);
+  box-shadow: -20px 0 60px rgba(0, 0, 0, 0.5);
+  z-index: 101;
+  transform: translateX(100%);
+  transition: transform 0.3s ease;
+  display: flex;
+  flex-direction: column;
+  font-family: 'Barlow Condensed', sans-serif;
+}
+.drawer.show { transform: translateX(0); }
+.drawer.handoff-drawer.show { transform: translateX(0); }
+.drawer-head {
+  padding: 18px 22px;
+  border-bottom: 1px solid var(--row-line);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.drawer-head h2 {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 22px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  color: var(--gold);
+  text-transform: uppercase;
+}
+.close-btn {
+  background: transparent;
+  border: 1px solid var(--row-line);
+  color: var(--text-dim);
+  padding: 6px 12px;
+  font-family: inherit;
+  font-size: 12px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  cursor: pointer;
+  border-radius: 4px;
+  font-weight: 700;
+}
+.close-btn:hover { background: var(--row-base); color: var(--white); }
+.drawer-tabs { display: flex; border-bottom: 1px solid var(--row-line); }
+.drawer-tab {
+  flex: 1;
+  padding: 11px 12px;
+  background: transparent;
+  border: none;
+  color: var(--text-dim);
+  font-family: inherit;
+  font-weight: 700;
+  font-size: 12px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  cursor: pointer;
+  border-bottom: 3px solid transparent;
+}
+.drawer-tab.active { color: var(--gold); border-bottom-color: var(--gold); background: rgba(255, 184, 28, 0.04); }
+.drawer-tab:hover { color: var(--white); }
+.drawer-body { flex: 1; overflow-y: auto; padding: 18px 22px; }
+.tab-panel { display: none; }
+.tab-panel.active { display: block; }
+
+.form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+.form-grid label {
+  display: block;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  margin-bottom: 5px;
+}
+.form-grid input, .form-grid select, .form-grid textarea {
+  width: 100%;
+  background: var(--bg);
+  border: 1px solid var(--row-line);
+  color: var(--white);
+  padding: 8px 11px;
+  border-radius: 5px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13px;
+}
+.form-grid input:focus, .form-grid select:focus, .form-grid textarea:focus {
+  outline: none;
+  border-color: var(--gold);
+  box-shadow: 0 0 0 2px rgba(255, 184, 28, 0.2);
+}
+.form-grid .full { grid-column: 1 / -1; }
+.form-grid textarea { font-family: 'Barlow Condensed', sans-serif; font-size: 14px; }
+
+.btn-row {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+  margin-top: 14px;
+}
+.btn {
+  padding: 10px 18px;
+  border: 1px solid var(--row-line);
+  background: var(--row-base);
+  color: var(--white);
+  font-family: 'Barlow Condensed', sans-serif;
+  font-weight: 700;
+  font-size: 13px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.btn:hover { background: var(--row-alt); border-color: var(--gold); }
+.btn-primary { background: var(--gold); color: var(--delta-blue); border-color: var(--gold); }
+.btn-primary:hover { background: var(--gold-bright); color: var(--bg); }
+.btn-danger { background: transparent; color: var(--red); border-color: var(--red); }
+.btn-danger:hover { background: var(--red); color: var(--white); }
+.btn-quick {
+  padding: 4px 9px;
+  font-size: 11px;
+  letter-spacing: 0.12em;
+}
+
+.flight-list { display: flex; flex-direction: column; gap: 6px; }
+.flight-row {
+  display: grid;
+  grid-template-columns: auto auto auto 1fr auto;
+  gap: 10px;
+  padding: 9px 11px;
+  background: var(--row-base);
+  border: 1px solid var(--row-line);
+  border-radius: 5px;
+  align-items: center;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13px;
+  color: var(--white);
+}
+.flight-row:hover { border-color: var(--gold); }
+.flight-row .fl-num { font-weight: 700; color: var(--gold); }
+.flight-row .fl-sched { color: var(--text-dim); }
+.flight-row .fl-eta { color: var(--gold-bright); }
+.flight-row .fl-dest { font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 15px; }
+.flight-row .fl-actions { display: flex; gap: 5px; }
+.mini-btn {
+  background: transparent;
+  border: 1px solid var(--row-line);
+  color: var(--text-dim);
+  padding: 4px 9px;
+  font-family: inherit;
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  font-weight: 600;
+  cursor: pointer;
+  border-radius: 3px;
+}
+.mini-btn:hover { color: var(--white); border-color: var(--gold); }
+.mini-btn.del:hover { color: var(--red); border-color: var(--red); }
+
+.paste-area {
+  width: 100%;
+  min-height: 200px;
+  background: var(--bg);
+  border: 1px solid var(--row-line);
+  color: var(--white);
+  padding: 11px;
+  border-radius: 5px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13px;
+  resize: vertical;
+}
+.paste-help {
+  background: var(--row-base);
+  border-left: 3px solid var(--gold);
+  padding: 12px 14px;
+  margin-bottom: 14px;
+  font-size: 13px;
+  color: var(--text-dim);
+  border-radius: 3px;
+}
+.paste-help code {
+  font-family: 'JetBrains Mono', monospace;
+  color: var(--gold-bright);
+  background: var(--bg);
+  padding: 1px 5px;
+  border-radius: 3px;
+}
+
+.settings-row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 14px;
+  align-items: center;
+  padding: 13px 0;
+  border-bottom: 1px solid var(--row-line);
+}
+.settings-row label {
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  color: var(--white);
+  text-transform: uppercase;
+}
+.settings-row .help {
+  display: block;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--text-dim);
+  letter-spacing: 0.04em;
+  text-transform: none;
+  margin-top: 3px;
+}
+.settings-row input[type="text"], .settings-row input[type="number"] {
+  width: 110px;
+  background: var(--bg);
+  border: 1px solid var(--row-line);
+  color: var(--white);
+  padding: 7px 10px;
+  border-radius: 4px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 14px;
+  text-align: center;
+}
+.settings-row input[type="checkbox"] { width: 22px; height: 22px; cursor: pointer; }
+
+/* ============ HANDOFF DRAWER ============ */
+.handoff-add {
+  background: var(--row-base);
+  border: 1px solid var(--row-line);
+  border-radius: 6px;
+  padding: 14px;
+  margin-bottom: 16px;
+}
+.handoff-add textarea {
+  width: 100%;
+  min-height: 70px;
+  background: var(--bg);
+  border: 1px solid var(--row-line);
+  color: var(--white);
+  padding: 10px;
+  border-radius: 5px;
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 14px;
+  resize: vertical;
+}
+.handoff-add textarea:focus {
+  outline: none;
+  border-color: var(--gold);
+}
+.handoff-add-row {
+  display: flex;
+  gap: 10px;
+  margin-top: 10px;
+  align-items: center;
+}
+.handoff-add-row select, .handoff-add-row input {
+  background: var(--bg);
+  border: 1px solid var(--row-line);
+  color: var(--white);
+  padding: 7px 10px;
+  border-radius: 4px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13px;
+}
+.handoff-add-row .btn { margin-left: auto; }
+
+.handoff-list { display: flex; flex-direction: column; gap: 8px; }
+.handoff-item {
+  background: var(--row-base);
+  border: 1px solid var(--row-line);
+  border-left: 4px solid var(--gold);
+  border-radius: 5px;
+  padding: 12px 14px;
+  position: relative;
+}
+.handoff-item.resolved { opacity: 0.5; border-left-color: var(--green); }
+.handoff-item.cat-missing-bag { border-left-color: var(--red); }
+.handoff-item.cat-reroute { border-left-color: var(--cyan); }
+.handoff-item.cat-late-bag { border-left-color: var(--orange); }
+.handoff-item.cat-gate-change { border-left-color: var(--blue); }
+.handoff-item.cat-general { border-left-color: var(--text-dim); }
+
+.handoff-meta {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  margin-bottom: 6px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  color: var(--text-dim);
+}
+.handoff-cat-tag {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-weight: 700;
+  font-size: 11px;
+  padding: 2px 7px;
+  border-radius: 100px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+.handoff-cat-tag.cat-missing-bag { background: rgba(239, 68, 68, 0.15); color: var(--red-glow); }
+.handoff-cat-tag.cat-reroute { background: rgba(34, 211, 238, 0.15); color: var(--cyan); }
+.handoff-cat-tag.cat-late-bag { background: rgba(251, 146, 60, 0.15); color: var(--orange); }
+.handoff-cat-tag.cat-gate-change { background: rgba(79, 143, 255, 0.15); color: var(--blue-bright); }
+.handoff-cat-tag.cat-general { background: rgba(143, 163, 197, 0.1); color: var(--text-dim); }
+
+.handoff-author { color: var(--gold); font-weight: 700; }
+.handoff-time { color: var(--text-muted); }
+.handoff-text {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 14px;
+  color: var(--white);
+  line-height: 1.4;
+}
+.handoff-item.resolved .handoff-text { text-decoration: line-through; color: var(--text-dim); }
+.handoff-actions {
+  display: flex;
+  gap: 6px;
+  margin-top: 8px;
+}
+.handoff-empty {
+  text-align: center;
+  padding: 40px 20px;
+  color: var(--text-dim);
+}
+.handoff-empty h3 {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 18px;
+  color: var(--gold);
+  letter-spacing: 0.1em;
+  margin-bottom: 8px;
+}
+
+/* ============ VIEW BANNER (shown when filtering by pier or lead) ============ */
+.view-banner {
+  display: none;
+  padding: 8px 16px;
+  background: linear-gradient(90deg, var(--delta-blue), rgba(0,51,102,0.4));
+  border-bottom: 3px solid var(--gold);
+  font-family: 'Barlow Condensed', sans-serif;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 14px;
+  font-size: 14px;
+}
+.view-banner.show { display: flex; }
+.view-banner .vb-tag {
+  background: var(--gold);
+  color: var(--delta-blue);
+  padding: 4px 10px;
+  border-radius: 4px;
+  font-weight: 800;
+  font-size: 12px;
+}
+.view-banner .vb-detail { color: var(--text-dim); }
+.view-banner .vb-back {
+  margin-left: auto;
+  color: var(--gold);
+  text-decoration: none;
+  font-size: 12px;
+  padding: 4px 10px;
+  border: 1px solid var(--gold);
+  border-radius: 4px;
+}
+.view-banner .vb-back:hover { background: var(--gold); color: var(--delta-blue); }
+body.view-pierA .view-banner { border-bottom-color: #4F8FFF; }
+body.view-pierA .view-banner .vb-tag { background: #4F8FFF; color: var(--white); }
+body.view-pierB .view-banner { border-bottom-color: #A78BFA; }
+body.view-pierB .view-banner .vb-tag { background: #A78BFA; color: var(--white); }
+body.view-pierC .view-banner { border-bottom-color: #EC4899; }
+body.view-pierC .view-banner .vb-tag { background: #EC4899; color: var(--white); }
+body.view-pierD .view-banner { border-bottom-color: #FB923C; }
+body.view-pierD .view-banner .vb-tag { background: #FB923C; color: var(--white); }
+body.view-lead .view-banner { border-bottom-color: var(--green); }
+body.view-lead .view-banner .vb-tag { background: var(--green); color: var(--bg); }
+
+/* ============ PIER BADGE ON ROW ============ */
+.pier-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  font-family: 'Barlow Condensed', sans-serif;
+  font-weight: 800;
+  font-size: 12px;
+  color: var(--white);
+  letter-spacing: 0;
+  margin-left: 6px;
+  vertical-align: middle;
+}
+.pier-badge.pier-A { background: #4F8FFF; }
+.pier-badge.pier-B { background: #A78BFA; }
+.pier-badge.pier-C { background: #EC4899; }
+.pier-badge.pier-D { background: #FB923C; }
+
+/* ============ STATUS WORKFLOW PILLS / BUTTONS ============ */
+.workflow-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 9px;
+  border-radius: 4px;
+  font-family: 'Barlow Condensed', sans-serif;
+  font-weight: 700;
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+.workflow-pill.wf-assigned { background: rgba(143, 163, 197, 0.18); color: var(--text-dim); border: 1px solid var(--row-line); }
+.workflow-pill.wf-exitScanned { background: rgba(34, 211, 238, 0.15); color: var(--cyan); border: 1px solid rgba(34, 211, 238, 0.4); }
+.workflow-pill.wf-cartOut { background: rgba(251, 191, 36, 0.15); color: var(--amber); border: 1px solid rgba(251, 191, 36, 0.4); }
+.workflow-pill.wf-deliveredAtGate { background: rgba(79, 143, 255, 0.18); color: var(--blue-bright); border: 1px solid rgba(79, 143, 255, 0.5); }
+.workflow-pill.wf-missingBag { background: rgba(239, 68, 68, 0.18); color: var(--red-glow); border: 1px solid rgba(239, 68, 68, 0.5); animation: badge-pulse 1.6s ease-in-out infinite; }
+.workflow-pill.wf-complete { background: rgba(34, 197, 94, 0.18); color: var(--green-glow); border: 1px solid rgba(34, 197, 94, 0.5); }
+
+.status-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 5px;
+}
+.sb-btn {
+  background: var(--row-base);
+  border: 1px solid var(--row-line);
+  color: var(--text-dim);
+  padding: 4px 9px;
+  font-family: 'Barlow Condensed', sans-serif;
+  font-weight: 700;
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  border-radius: 3px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.sb-btn:hover { background: var(--gold); color: var(--delta-blue); border-color: var(--gold); }
+.sb-btn.sb-next {
+  background: rgba(34, 211, 238, 0.15);
+  color: var(--cyan);
+  border-color: var(--cyan);
+}
+.sb-btn.sb-missing {
+  background: rgba(239, 68, 68, 0.1);
+  color: var(--red-glow);
+  border-color: var(--red);
+}
+.sb-btn.sb-missing:hover { background: var(--red); color: var(--white); }
+.sb-btn.sb-done { background: var(--green); color: var(--white); border-color: var(--green); }
+
+/* Quick-edit action row — for fast manual gate/delay/cancel overrides */
+.quick-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 6px;
+  padding-top: 6px;
+  border-top: 1px dashed var(--row-line);
+}
+.qa-btn {
+  background: transparent;
+  border: 1px solid var(--row-line);
+  color: var(--text-muted);
+  padding: 3px 7px;
+  font-family: 'Barlow Condensed', sans-serif;
+  font-weight: 600;
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  border-radius: 3px;
+  cursor: pointer;
+  transition: all 0.15s;
+  white-space: nowrap;
+}
+.qa-btn:hover { color: var(--white); border-color: var(--white); }
+.qa-btn.qa-gate { color: var(--blue-bright); border-color: rgba(79, 143, 255, 0.35); }
+.qa-btn.qa-gate:hover { background: var(--blue-bright); color: var(--white); border-color: var(--blue-bright); }
+.qa-btn.qa-delay { color: var(--amber); border-color: rgba(251, 191, 36, 0.35); }
+.qa-btn.qa-delay:hover { background: var(--amber); color: var(--bg); border-color: var(--amber); }
+.qa-btn.qa-cancel { color: var(--red-glow); border-color: rgba(239, 68, 68, 0.3); }
+.qa-btn.qa-cancel:hover { background: var(--red); color: var(--white); border-color: var(--red); }
+.qa-btn.qa-restore { color: var(--green-glow); border-color: rgba(34, 197, 94, 0.35); }
+.qa-btn.qa-restore:hover { background: var(--green); color: var(--white); border-color: var(--green); }
+
+/* ============ FLIGHT COMPLETE STATE ============ */
+.row.r-complete {
+  background: linear-gradient(90deg, rgba(34, 197, 94, 0.22), rgba(20, 35, 70, 0.3) 80%);
+  border-left: 4px solid var(--green);
+}
+.row.r-complete .timer { color: var(--green-glow); }
+
+/* Amber warning row when ETD is within warning window but cart not out yet */
+.row.r-amber {
+  background: linear-gradient(90deg, rgba(251, 191, 36, 0.14), rgba(20, 35, 70, 0.3) 70%);
+  border-left: 4px solid var(--amber);
+}
+
+/* ============ CREDENTIALS MODAL (initials + employee number) ============ */
+.cred-modal {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 8, 24, 0.78);
+  z-index: 800;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+}
+.cred-modal.show { display: flex; }
+.cred-box {
+  background: var(--bg-2);
+  border: 2px solid var(--gold);
+  border-radius: 10px;
+  padding: 24px 28px;
+  width: min(440px, 92vw);
+  box-shadow: 0 30px 80px rgba(0,0,0,0.55), 0 0 40px rgba(255,184,28,0.25);
+}
+.cred-box h3 {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-weight: 800;
+  font-size: 13px;
+  letter-spacing: 0.16em;
+  color: var(--gold-bright);
+  text-transform: uppercase;
+  margin: 0 0 4px 0;
+}
+.cred-box .cred-action {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-weight: 700;
+  font-size: 28px;
+  color: var(--white);
+  letter-spacing: 0.02em;
+  margin-bottom: 4px;
+  line-height: 1.1;
+}
+.cred-box .cred-flight {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 15px;
+  color: var(--text-dim);
+  margin-bottom: 18px;
+}
+.cred-box .cred-flight strong { color: var(--gold-bright); font-weight: 700; }
+.cred-box label {
+  display: block;
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin-bottom: 5px;
+}
+.cred-box input {
+  width: 100%;
+  background: var(--bg);
+  border: 1.5px solid var(--row-line);
+  border-radius: 6px;
+  padding: 12px 14px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 20px;
+  color: var(--white);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  margin-bottom: 14px;
+  box-sizing: border-box;
+  -webkit-appearance: none;
+}
+.cred-box input:focus {
+  outline: none;
+  border-color: var(--gold);
+  box-shadow: 0 0 0 3px rgba(255,184,28,0.18);
+}
+.cred-box input.cred-empid { letter-spacing: 0.1em; }
+.cred-box .cred-error {
+  display: none;
+  color: var(--red-glow);
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  margin-top: -8px;
+  margin-bottom: 10px;
+}
+.cred-box .cred-error.show { display: block; }
+.cred-box .cred-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 6px;
+}
+.cred-box .cred-btn {
+  flex: 1;
+  padding: 12px 16px;
+  border-radius: 6px;
+  font-family: 'Barlow Condensed', sans-serif;
+  font-weight: 700;
+  font-size: 13px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  cursor: pointer;
+  border: 1.5px solid;
+  transition: all 0.15s;
+}
+.cred-box .cred-btn.primary { background: var(--gold); color: var(--delta-blue); border-color: var(--gold); }
+.cred-box .cred-btn.primary:hover { background: var(--gold-bright); border-color: var(--gold-bright); }
+.cred-box .cred-btn.secondary { background: transparent; color: var(--text-dim); border-color: var(--row-line); }
+.cred-box .cred-btn.secondary:hover { color: var(--white); border-color: var(--white); }
+.cred-box .cred-hint {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-top: 12px;
+  letter-spacing: 0.04em;
+  text-align: center;
+}
+
+/* Delivered-at-gate reminder pulse — applied when status=cartOut */
+.sb-btn.sb-reminder {
+  animation: deliver-pulse 1.4s ease-in-out infinite;
+  font-weight: 800;
+}
+@keyframes deliver-pulse {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(34, 211, 238, 0.6);
+    transform: scale(1);
+  }
+  50% {
+    box-shadow: 0 0 0 6px rgba(34, 211, 238, 0);
+    transform: scale(1.04);
+  }
+}
+
+/* "Locked" status button — shown when timing gate hasn't opened yet */
+.sb-btn.sb-locked {
+  background: transparent;
+  border-color: var(--row-line);
+  color: var(--text-muted);
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+.sb-btn.sb-locked:hover { background: transparent; color: var(--text-muted); border-color: var(--row-line); }
+
+/* ============ FEEDBACK DRAWER ============ */
+.feedback-options {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-bottom: 18px;
+}
+.fb-opt {
+  background: var(--row-base);
+  border: 1px solid var(--row-line);
+  color: var(--white);
+  padding: 14px 12px;
+  text-align: left;
+  font-family: 'Barlow Condensed', sans-serif;
+  font-weight: 600;
+  font-size: 14px;
+  letter-spacing: 0.04em;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.15s;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.fb-opt:hover { border-color: var(--gold); background: var(--row-alt); }
+.fb-opt .fb-icon { font-size: 22px; }
+.fb-opt .fb-label { font-size: 13px; line-height: 1.3; flex: 1; }
+.fb-opt.fb-positive { border-left: 3px solid var(--green); }
+.fb-opt.fb-negative { border-left: 3px solid var(--orange); }
+
+.feedback-list { display: flex; flex-direction: column; gap: 6px; margin-top: 18px; }
+.feedback-item {
+  background: var(--row-base);
+  border: 1px solid var(--row-line);
+  border-radius: 5px;
+  padding: 9px 12px;
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 13px;
+}
+.feedback-item .fb-tag {
+  padding: 2px 8px;
+  border-radius: 100px;
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.feedback-item.pos .fb-tag { background: rgba(34, 197, 94, 0.18); color: var(--green-glow); }
+.feedback-item.neg .fb-tag { background: rgba(251, 146, 60, 0.18); color: var(--orange); }
+.feedback-item.note .fb-tag { background: rgba(143, 163, 197, 0.18); color: var(--text-dim); }
+.feedback-item .fb-text { flex: 1; color: var(--white); }
+.feedback-item .fb-time { color: var(--text-muted); font-size: 11px; font-family: 'JetBrains Mono', monospace; }
+
+/* ============ LEAD LINKS UI ============ */
+.lead-link-row {
+  display: grid;
+  grid-template-columns: 80px 1fr auto;
+  gap: 10px;
+  padding: 10px 12px;
+  background: var(--row-base);
+  border: 1px solid var(--row-line);
+  border-radius: 5px;
+  margin-bottom: 6px;
+  align-items: center;
+}
+.lead-link-row .ll-name {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-weight: 800;
+  font-size: 16px;
+  color: var(--gold);
+  letter-spacing: 0.08em;
+}
+.lead-link-row .ll-pier {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 10px;
+  color: var(--text-dim);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  margin-top: 2px;
+}
+.lead-link-row .ll-count {
+  display: inline-block;
+  background: var(--delta-blue);
+  color: var(--gold-bright);
+  padding: 1px 7px;
+  border-radius: 100px;
+  font-size: 11px;
+  font-family: 'JetBrains Mono', monospace;
+  margin-top: 3px;
+}
+.lead-link-row .ll-link {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  color: var(--text-dim);
+  background: var(--bg);
+  padding: 6px 9px;
+  border-radius: 3px;
+  word-break: break-all;
+  display: block;
+}
+
+/* ============ LEAD MOBILE VIEW (entirely different layout) ============ */
+body.view-lead .table-header { display: none; }
+body.view-lead .kpi-strip {
+  display: flex;
+  overflow-x: auto;
+  grid-template-columns: none;
+}
+body.view-lead .kpi-tile { flex: 0 0 38vw; min-width: 140px; max-width: 200px; }
+body.view-lead .row {
+  display: block;
+  padding: 14px 16px;
+  border-bottom: 2px solid var(--row-line);
+  min-height: auto;
+  background: var(--bg-2);
+  cursor: default;
+  grid-template-columns: none;
+}
+body.view-lead .row:hover { background: var(--bg-2) !important; }
+body.view-lead .row.r-critical { background: linear-gradient(135deg, rgba(239,68,68,0.25), var(--bg-2)); border-left: 5px solid var(--red); padding-left: 11px; }
+body.view-lead .row.r-imminent { background: linear-gradient(135deg, rgba(251,146,60,0.18), var(--bg-2)); border-left: 5px solid var(--orange); padding-left: 11px; }
+body.view-lead .row.r-amber { background: linear-gradient(135deg, rgba(251,191,36,0.15), var(--bg-2)); border-left: 5px solid var(--amber); padding-left: 11px; }
+body.view-lead .row.r-complete { background: linear-gradient(135deg, rgba(34,197,94,0.18), var(--bg-2)); border-left: 5px solid var(--green); padding-left: 11px; opacity: 0.78; }
+body.view-lead .row.r-departed { display: none; }
+body.view-lead .row > div:not(.lead-card) { display: none; }
+body.view-lead .lead-card { display: grid; }
+
+.lead-card {
+  display: none;
+  grid-template-columns: 1fr auto;
+  grid-template-areas:
+    "flight  pier"
+    "stats   stats"
+    "buttons buttons";
+  gap: 8px 10px;
+  width: 100%;
+}
+.lead-card .lc-flight {
+  grid-area: flight;
+  font-family: 'Barlow Condensed', sans-serif;
+  font-weight: 800;
+  font-size: 22px;
+  color: var(--white);
+  letter-spacing: 0.04em;
+  line-height: 1.1;
+}
+.lead-card .lc-flight .lc-dest {
+  font-weight: 700;
+  color: var(--gold-bright);
+  margin-left: 8px;
+}
+.lead-card .lc-flight .lc-tail {
+  display: block;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--text-dim);
+  margin-top: 3px;
+  letter-spacing: 0.02em;
+}
+.lead-card .lc-pier { grid-area: pier; align-self: start; }
+.lead-card .lc-stats {
+  grid-area: stats;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 14px;
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 14px;
+  color: var(--text-dim);
+  letter-spacing: 0.04em;
+  align-items: center;
+}
+.lead-card .lc-stats .label { color: var(--text-muted); font-size: 0.78em; letter-spacing: 0.14em; text-transform: uppercase; }
+.lead-card .lc-stats strong { color: var(--white); font-weight: 700; }
+.lead-card .lc-stats .lc-timer {
+  font-family: 'JetBrains Mono', monospace;
+  font-weight: 700;
+  font-size: 18px;
+  color: var(--gold-bright);
+  font-variant-numeric: tabular-nums;
+  background: rgba(255,184,28,0.08);
+  padding: 2px 8px;
+  border-radius: 4px;
+}
+.lead-card .lc-stats .lc-timer.urgent { color: var(--red-glow); background: rgba(239,68,68,0.18); animation: badge-pulse 1.5s infinite; }
+.lead-card .lc-stats .lc-timer.amber { color: var(--amber); background: rgba(251,191,36,0.18); }
+.lead-card .lc-buttons {
+  grid-area: buttons;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.lead-card .lc-buttons .sb-btn {
+  font-size: 12px;
+  padding: 8px 11px;
+  min-height: 38px;
+  flex: 1;
+  min-width: 90px;
+}
+.lead-card .lc-rerouting {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 12px;
+  color: var(--cyan);
+  background: rgba(34,211,238,0.1);
+  border-left: 2px solid var(--cyan);
+  padding: 4px 8px;
+  margin-top: 4px;
+  border-radius: 3px;
+  grid-column: 1 / -1;
+}
+.lead-card .lc-missing {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-weight: 700;
+  font-size: 12px;
+  color: var(--red);
+  background: rgba(239,68,68,0.12);
+  border-left: 2px solid var(--red);
+  padding: 4px 8px;
+  margin-top: 4px;
+  border-radius: 3px;
+  grid-column: 1 / -1;
+}
+
+/* ============ RESPONSIVE — TABLET / LAPTOP (≤ 1280px) ============ */
+@media (max-width: 1280px) {
+  .kpi-strip { grid-template-columns: repeat(3, 1fr); }
+  .row, .table-header { grid-template-columns: 1.4fr 1.4fr 1.3fr 0.7fr 1fr 0.7fr; gap: 1vw; }
+  .row .sched, .table-header .col-sched,
+  .row .cartout-cell, .table-header .col-cartout,
+  .row .crew-cell, .table-header .col-crew { display: none; }
+}
+
+/* ============ RESPONSIVE — MOBILE / NARROW (≤ 900px) ============ */
+@media (max-width: 900px) {
+  html, body { height: 100vh; height: 100dvh; }
+
+  /* Compact top bar */
+  .topbar {
+    padding: 6px 10px;
+    gap: 8px;
+    grid-template-columns: auto 1fr auto;
+  }
+  .delta-widget { width: 28px; height: 28px; min-width: 28px; min-height: 28px; }
+  .brand { gap: 8px; }
+  .brand-title { font-size: 12px; letter-spacing: 0.06em; white-space: nowrap; }
+  .brand-sub { font-size: 9px; letter-spacing: 0.14em; margin-top: 2px; white-space: nowrap; }
+  .header-title { font-size: 20px; letter-spacing: 0.08em; }
+  .clock-area { gap: 6px; flex-direction: column-reverse; align-items: flex-end; }
+  .clock-block { display: flex; flex-direction: row; align-items: baseline; gap: 6px; }
+  .clock { font-size: 15px; }
+  .clock-date { display: none; }
+  .header-buttons { gap: 4px; flex-direction: column; }
+  .hdr-btn { padding: 4px 7px; font-size: 9px; letter-spacing: 0.06em; min-height: 28px; white-space: nowrap; }
+  .hdr-btn .count { padding: 0 4px; font-size: 9px; min-width: 14px; }
+
+  /* KPI strip — horizontal scroll */
+  .kpi-strip {
+    display: flex;
+    overflow-x: auto;
+    overflow-y: hidden;
+    grid-template-columns: none;
+  }
+  .kpi-strip::-webkit-scrollbar { height: 4px; }
+  .kpi-strip::-webkit-scrollbar-thumb { background: var(--gold); }
+  .kpi-tile {
+    flex: 0 0 38vw;
+    min-width: 140px;
+    max-width: 180px;
+    padding: 7px 11px;
+    min-height: 56px;
+  }
+  .kpi-label { font-size: 10px; }
+  .kpi-value { font-size: 20px; }
+  .kpi-sub { font-size: 11px; }
+
+  /* View banner */
+  .view-banner { padding: 6px 10px; font-size: 11px; flex-wrap: wrap; gap: 6px; }
+  .view-banner .vb-tag { font-size: 10px; padding: 3px 7px; }
+  .view-banner .vb-detail { font-size: 10px; }
+  .view-banner .vb-back { font-size: 10px; padding: 3px 7px; margin-left: auto; }
+
+  /* Hide table header — cards self-label */
+  .table-header { display: none; }
+
+  /* Scrollbar visible on mobile */
+  .rows-wrap { overflow-y: scroll; scrollbar-width: thin; }
+  .rows-wrap::-webkit-scrollbar { width: 12px; }
+  .rows-wrap::-webkit-scrollbar-track { background: var(--bg-2); }
+  .rows-wrap::-webkit-scrollbar-thumb {
+    background: linear-gradient(180deg, var(--gold-bright), #C8910A);
+    border-radius: 6px;
+    border: 2px solid var(--bg-2);
+    min-height: 80px;
+  }
+
+  /* Compact card-style rows for projection/pier views on mobile */
+  .row {
+    display: grid;
+    grid-template-columns: 1.3fr 1fr 0.6fr;
+    grid-template-areas:
+      "flight  timer   gate"
+      "status  dest    dest"
+      "carts   carts   carts";
+    padding: 10px 12px;
+    gap: 4px 10px;
+    min-height: auto;
+  }
+  .flight-cell { grid-area: flight; }
+  .timer-cell { grid-area: timer; align-self: center; }
+  .gate-cell { grid-area: gate; align-self: center; }
+  .status-cell {
+    grid-area: status;
+    flex-direction: row;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+  .dest {
+    grid-area: dest;
+    text-align: right;
+    align-self: center;
+    line-height: 1;
+  }
+  .carts-cell {
+    grid-area: carts;
+    flex-direction: row;
+    align-items: center;
+    gap: 10px;
+    padding-top: 6px;
+    border-top: 1px solid var(--row-line);
+    margin-top: 4px;
+  }
+  .row .sched, .row .cartout-cell, .row .crew-cell { display: none; }
+  .row.r-critical { padding-left: 8px; }
+
+  /* Resize fonts for mobile */
+  .flight { font-size: 18px; }
+  .pier-badge { width: 22px; height: 22px; font-size: 11px; }
+  .tail-small { font-size: 11px; }
+  .timer { font-size: 22px; }
+  .row.r-critical .timer { font-size: 16px; }
+  .cutoff-time { font-size: 13px; }
+  .status-pill { font-size: 9px; padding: 2px 7px; }
+  .gate { font-size: 24px; }
+  .dest { font-size: 22px; }
+  .carts { font-size: 18px; }
+
+  /* Lead view — already vertically-stacked, just tighten */
+  body.view-lead .row { padding: 12px 14px; }
+}
+
+/* ============ RESPONSIVE — VERY NARROW (≤ 420px) ============ */
+@media (max-width: 420px) {
+  .topbar { padding: 6px 8px; }
+  .header-title { font-size: 18px; }
+  .brand-title { font-size: 11px; }
+  .brand-sub { font-size: 8px; }
+  .clock { font-size: 14px; }
+  .delta-widget { width: 26px; height: 26px; min-width: 26px; min-height: 26px; }
+  .hdr-btn { font-size: 9px; padding: 4px 6px; }
+  .drawer, .feedback-drawer { width: 100vw; }
+  .form-grid { grid-template-columns: 1fr; gap: 10px; }
+  .feedback-options { grid-template-columns: 1fr; }
+}
+
+/* ============ PHONE-FIRST LAYER (≤ 768px) ============ */
+@media (max-width: 768px) {
+  html { -webkit-text-size-adjust: 100%; }
+
+  /* — Bottom action bar: Ops Entry / Handoff / Feedback in thumb reach — */
+  .header-buttons {
+    position: fixed;
+    left: 0; right: 0; bottom: 0;
+    z-index: 500;
+    flex-direction: row;
+    gap: 0;
+    background: linear-gradient(180deg, var(--bg-2, #0B1F3A), #06122A);
+    border-top: 2px solid var(--gold);
+    padding: 6px 8px calc(6px + env(safe-area-inset-bottom, 0px));
+    box-shadow: 0 -6px 18px rgba(0,0,0,0.45);
+  }
+  .header-buttons .hdr-btn {
+    flex: 1;
+    min-height: 48px;
+    font-size: 12px;
+    letter-spacing: 0.08em;
+    margin: 0 4px;
+    border-radius: 6px;
+    touch-action: manipulation;
+  }
+  /* keep content clear of the bar */
+  .rows-wrap { padding-bottom: calc(70px + env(safe-area-inset-bottom, 0px)); }
+  .toast { bottom: calc(80px + env(safe-area-inset-bottom, 0px)); }
+
+  /* Topbar simplifies to brand + clock */
+  .topbar { grid-template-columns: auto 1fr auto; align-items: center; }
+  .clock-area { flex-direction: row; align-items: center; }
+  .header-title { font-size: 17px; }
+
+  /* — Flight cards: roomier, full-info, whole card tappable — */
+  .row {
+    grid-template-columns: 1.3fr 1fr 0.7fr;
+    grid-template-areas:
+      "flight  timer    gate"
+      "status  dest     dest"
+      "crew    crew     cartout"
+      "carts   carts    carts";
+    padding: 14px 14px 12px;
+    gap: 6px 10px;
+    touch-action: manipulation;
+  }
+  .row:active { background: rgba(255, 184, 28, 0.07); }
+
+  /* Crew chips return on phones — one compact line */
+  .row .crew-cell {
+    display: flex;
+    grid-area: crew;
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 4px 12px;
+    align-items: center;
+    padding-top: 6px;
+    border-top: 1px dashed var(--row-line);
+  }
+  .row .crew-cell .crew-line { display: flex; gap: 5px; align-items: baseline; }
+  .row .crew-cell .crew-label { font-size: 9px; }
+  .row .crew-cell .crew-value { font-size: 12px; }
+
+  /* Cart-out time returns when logged */
+  .row .cartout-cell {
+    display: flex;
+    grid-area: cartout;
+    flex-direction: row;
+    justify-content: flex-end;
+    align-items: center;
+    gap: 6px;
+    padding-top: 6px;
+    border-top: 1px dashed var(--row-line);
+  }
+  .row .cartout-cell .cartout-time { font-size: 13px; }
+  .row .cartout-cell .cartout-time.empty { display: none; }
+
+  /* — Carts area stacks: count line, workflow grid, quick-action row — */
+  .carts-cell {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 6px;
+  }
+  .carts-cell .carts {
+    align-self: flex-start;
+    font-size: 16px;
+  }
+  .carts-cell .carts::after {
+    content: " CARTS";
+    font-size: 10px;
+    letter-spacing: 0.14em;
+    color: var(--text-dim);
+  }
+
+  /* — Workflow buttons: real touch targets, 2-up grid — */
+  .status-buttons {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    width: 100%;
+    margin-top: 2px;
+  }
+  .sb-btn {
+    min-height: 46px;
+    font-size: 13px;
+    padding: 8px 10px;
+    border-radius: 6px;
+    border-width: 1.5px;
+    touch-action: manipulation;
+  }
+  .sb-btn:active { transform: scale(0.97); }
+  .quick-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 8px;
+    width: 100%;
+    margin-top: 2px;
+  }
+  .quick-actions .sb-btn, .quick-actions button, .qa-btn {
+    min-height: 44px;
+    font-size: 12px;
+    border-radius: 6px;
+    touch-action: manipulation;
+  }
+
+  /* — Drawers: full screen, no iOS focus-zoom — */
+  .drawer, .feedback-drawer, .handoff-drawer { width: 100vw; }
+  .drawer input[type="text"], .drawer input[type="number"], .drawer input[type="time"],
+  .drawer select, .drawer textarea,
+  .handoff-drawer textarea, .feedback-drawer input {
+    font-size: 16px !important;   /* prevents iOS auto-zoom on focus */
+    min-height: 44px;
+    border-radius: 6px;
+  }
+  .drawer textarea, .handoff-drawer textarea { min-height: 72px; }
+  .form-grid { grid-template-columns: 1fr; gap: 12px; }
+  .drawer .btn, .handoff-drawer .btn, .feedback-drawer .btn {
+    min-height: 48px;
+    font-size: 14px;
+    touch-action: manipulation;
+  }
+  .btn-row { flex-wrap: wrap; gap: 10px; }
+  .drawer-tab { min-height: 44px; font-size: 12px; }
+
+  /* Settings rows stack with full-width controls (they're grid, not flex) */
+  .settings-row {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+  .settings-row input, .settings-row button { justify-self: stretch; }
+  .settings-row input[type="checkbox"] { justify-self: start; }
+  #s-feed-refresh { justify-self: stretch; min-height: 48px; }
+
+  /* Drawer tabs: single scrollable line */
+  .drawer-tabs {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+  .drawer-tabs::-webkit-scrollbar { display: none; }
+  .drawer-tab {
+    flex: 0 0 auto;
+    white-space: nowrap;
+    padding: 12px 14px;
+  }
+  .settings-row input[type="text"], .settings-row input[type="number"] {
+    width: 100%;
+    min-width: 0 !important;
+    box-sizing: border-box;
+  }
+  .settings-row input[type="checkbox"] { width: 26px; height: 26px; }
+
+  /* KPI tiles: slightly larger swipe targets */
+  .kpi-tile { flex: 0 0 44vw; min-height: 64px; }
+}
+
+/* ============ PHONE — SMALL (≤ 400px) ============ */
+@media (max-width: 400px) {
+  .row { grid-template-columns: 1.2fr 1fr 0.65fr; padding: 12px 10px 10px; }
+  .flight { font-size: 17px; }
+  .gate { font-size: 22px; }
+  .dest { font-size: 19px; }
+  .timer { font-size: 19px; }
+  .header-buttons .hdr-btn { font-size: 11px; margin: 0 2px; }
+}
+</style>
+</head>
+<body>
+
+<!-- ============ TOP BAR ============ -->
+<div class="topbar">
+  <div class="brand">
+    <div class="delta-widget">
+      <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <linearGradient id="dwg" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stop-color="#E11D48"/>
+            <stop offset="100%" stop-color="#C8102E"/>
+          </linearGradient>
+        </defs>
+        <polygon points="50,12 88,82 50,68 12,82" fill="url(#dwg)" stroke="#FFB81C" stroke-width="1.5"/>
+        <polygon points="50,12 88,82 50,68" fill="rgba(0,0,0,0.18)"/>
+      </svg>
+    </div>
+    <div class="brand-text">
+      <div class="brand-title">Delta Air Lines · Bagroom Ops</div>
+      <div class="brand-sub" id="station-label">AUS · Live Departures Board</div>
+    </div>
+  </div>
+  <div class="header-title">Departures</div>
+  <div class="clock-area">
+    <div class="header-buttons">
+      <button class="hdr-btn" id="feedback-btn">💬 Feedback</button>
+      <button class="hdr-btn" id="handoff-btn">📋 Handoff <span class="count" id="handoff-count">0</span></button>
+      <button class="hdr-btn" id="admin-btn">⚙ Ops Entry</button>
+    </div>
+    <div class="clock-block">
+      <div class="clock" id="clock">--<span class="colon">:</span>--<span class="colon">:</span>--</div>
+      <div class="clock-date" id="clock-date">---</div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ VIEW BANNER (shown for filtered views) ============ -->
+<div class="view-banner" id="view-banner"></div>
+
+<!-- ============ KPI STRIP ============ -->
+<div class="kpi-strip" id="kpi-strip"></div>
+
+<!-- ============ TABLE HEADER ============ -->
+<div class="table-header">
+  <div>Flight · Pier</div>
+  <div class="col-sched">ETD</div>
+  <div class="col-status">Status / Bags A/C By</div>
+  <div class="timer-col">⏱ Cutoff Timer</div>
+  <div class="col-cartout right">Cart Out / Variance</div>
+  <div class="right">Gate</div>
+  <div>To</div>
+  <div class="col-crew">Crew / Lead</div>
+  <div class="right col-carts">Carts / Workflow</div>
+</div>
+
+<!-- ============ ROWS ============ -->
+<div class="rows-wrap" id="rows-wrap">
+  <div id="rows"></div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<!-- ============ EDIT DRAWER ============ -->
+<div class="drawer-backdrop" id="drawer-backdrop"></div>
+<aside class="drawer" id="drawer">
+  <div class="drawer-head">
+    <h2>Operations Entry</h2>
+    <button class="close-btn" id="drawer-close">Close · Esc</button>
+  </div>
+  <div class="drawer-tabs">
+    <button class="drawer-tab active" data-tab="add">+ Add / Edit</button>
+    <button class="drawer-tab" data-tab="list">All Flights</button>
+    <button class="drawer-tab" data-tab="paste">Bulk Paste</button>
+    <button class="drawer-tab" data-tab="leadlinks">Lead Links</button>
+    <button class="drawer-tab" data-tab="reports">Reports</button>
+    <button class="drawer-tab" data-tab="settings">Settings</button>
+  </div>
+  <div class="drawer-body">
+
+    <!-- ADD/EDIT -->
+    <div class="tab-panel active" data-panel="add">
+      <div id="edit-mode-banner" style="display:none; padding:10px 14px; background:rgba(255,184,28,0.1); border-left:3px solid var(--gold); margin-bottom:14px; font-size:13px; color:var(--gold-bright); letter-spacing:0.08em; text-transform:uppercase;">
+        Editing · <span id="edit-mode-flight"></span>
+      </div>
+      <div class="form-grid">
+        <div>
+          <label>Flight (e.g. DL 1290)</label>
+          <input id="f-flight" type="text" placeholder="DL 1290" />
+        </div>
+        <div>
+          <label>Tail #</label>
+          <input id="f-tail" type="text" placeholder="N322DN" />
+        </div>
+        <div>
+          <label>Destination</label>
+          <input id="f-dest" type="text" maxlength="3" style="text-transform:uppercase" placeholder="ATL" />
+        </div>
+        <div>
+          <label>Gate <span style="color:var(--blue-bright); font-weight:400; text-transform:none;">(auto-assigns pier from gate)</span></label>
+          <input id="f-gate" type="text" placeholder="22" />
+        </div>
+        <div>
+          <label>Pier Side</label>
+          <select id="f-pier">
+            <option value="">— Auto from gate —</option>
+            <option value="A">Pier A (Gates 02–04)</option>
+            <option value="B">Pier B (Gates 05–07)</option>
+            <option value="C">Pier C (Gates 08–09)</option>
+            <option value="D">Pier D (Gates 10–12)</option>
+          </select>
+        </div>
+        <div>
+          <label>Team Lead Initials</label>
+          <input id="f-lead" type="text" placeholder="AM" maxlength="6" style="text-transform:uppercase" />
+        </div>
+        <div>
+          <label>ETD (scheduled)</label>
+          <input id="f-sched" type="text" placeholder="6:25 AM" />
+        </div>
+        <div>
+          <label>New ETD (if delayed)</label>
+          <input id="f-eta" type="text" placeholder="6:45 AM" />
+        </div>
+        <div>
+          <label>Bagroom Agent Initials</label>
+          <input id="f-bagroom" type="text" placeholder="EP / MS" style="text-transform:uppercase" />
+        </div>
+        <div>
+          <label>Exit Scan Agent Initials</label>
+          <input id="f-exitscan" type="text" placeholder="MS" style="text-transform:uppercase" />
+        </div>
+        <div>
+          <label>Cart Delivery Agent Initials</label>
+          <input id="f-delivery" type="text" placeholder="AI" style="text-transform:uppercase" />
+        </div>
+        <div>
+          <label>Carts to load</label>
+          <input id="f-carts" type="text" placeholder="3" />
+        </div>
+        <div>
+          <label>Cart Out Actual Time</label>
+          <input id="f-cartout" type="text" placeholder="5:39 AM" />
+        </div>
+        <div>
+          <label>Gate Arrival Time</label>
+          <input id="f-gatearr" type="text" placeholder="5:48 AM" />
+        </div>
+        <div class="full">
+          <label>Delay Reason (if any)</label>
+          <select id="f-delay">
+            <option value="">— No delay —</option>
+            <option value="Late bags from TSA">Late bags from TSA</option>
+            <option value="Late transfer bags">Late transfer bags</option>
+            <option value="Belt jam">Belt jam</option>
+            <option value="Crew shortage">Crew shortage</option>
+            <option value="Gate change">Gate change</option>
+            <option value="Late inbound aircraft">Late inbound aircraft</option>
+            <option value="Weather">Weather</option>
+            <option value="Bag search">Bag search (TSA / security)</option>
+            <option value="Oversize baggage delay">Oversize baggage delay</option>
+            <option value="Other">Other</option>
+          </select>
+        </div>
+        <div>
+          <label>Missing Bags (count)</label>
+          <input id="f-missing" type="number" min="0" value="0" />
+        </div>
+        <div>
+          <label>Flight Status</label>
+          <select id="f-status">
+            <option value="">Auto (workflow)</option>
+            <option value="assigned">Assigned</option>
+            <option value="exitScanned">Exit Scanned</option>
+            <option value="cartOut">Cart Out</option>
+            <option value="deliveredAtGate">Delivered at Gate</option>
+            <option value="missingBag">Missing Bag</option>
+            <option value="complete">Complete</option>
+            <option value="canceled">Canceled</option>
+            <option value="diverted">Diverted</option>
+          </select>
+        </div>
+        <div class="full">
+          <label>Reroute / Connection Notes</label>
+          <textarea id="f-reroute" rows="2" placeholder="e.g. 2 bags to follow on DL 1041 · 8 bags connecting from DL 1820"></textarea>
+        </div>
+      </div>
+      <div class="btn-row">
+        <button class="btn btn-danger" id="f-delete" style="margin-right:auto; display:none">Delete</button>
+        <button class="btn" id="f-clear">Clear</button>
+        <button class="btn btn-primary" id="f-save">Save Flight</button>
+      </div>
+    </div>
+
+    <!-- LIST -->
+    <div class="tab-panel" data-panel="list">
+      <div style="margin-bottom:12px; font-size:13px; color:var(--text-dim); letter-spacing:0.06em;">
+        Click any flight to edit. Use Bulk Paste to load many at once.
+      </div>
+      <div class="flight-list" id="flight-list"></div>
+    </div>
+
+    <!-- BULK PASTE -->
+    <div class="tab-panel" data-panel="paste">
+      <div class="paste-help">
+        <strong style="color:var(--gold); display:block; margin-bottom:6px;">Two formats are auto-detected — paste either one:</strong>
+
+        <div style="margin-bottom:10px;">
+          <div style="color:var(--text-muted); font-size:10px; letter-spacing:0.1em; text-transform:uppercase; margin-bottom:4px;">Format 1 — Delta Live System (copy/paste from the departures table)</div>
+          <code style="font-size:11px;">DL &nbsp;&nbsp; ATL &nbsp;&nbsp; 1242 &nbsp;&nbsp; 03 &nbsp;&nbsp; 6:15 AM &nbsp;&nbsp; 6:10 AM &nbsp;&nbsp; 6:05 AM &nbsp;&nbsp; Complete &nbsp;&nbsp; 320 &nbsp;&nbsp; 003274 &nbsp;&nbsp; 196</code>
+          <div style="color:var(--text-muted); font-size:10px; margin-top:3px;">Fields: Airline · Dest · Flight# · Gate · Sched · [Est Dept] · [Act Dept] · [Status] · [Equip] · [Ship] · [Pax]</div>
+          <div style="color:var(--green-glow); font-size:11px; margin-top:2px;">✓ Status (Complete, Boarding, Routine…) is imported automatically. Gate and ETD are read correctly.</div>
+        </div>
+
+        <div>
+          <div style="color:var(--text-muted); font-size:10px; letter-spacing:0.1em; text-transform:uppercase; margin-bottom:4px;">Format 2 — Manual entry</div>
+          <code style="font-size:11px;">DL 1242 &nbsp;&nbsp; N322DN &nbsp;&nbsp; 6:15 AM &nbsp;&nbsp; &nbsp;&nbsp; 03 &nbsp;&nbsp; ATL &nbsp;&nbsp; 3 &nbsp;&nbsp; EP/MS &nbsp;&nbsp; AI &nbsp;&nbsp; AM &nbsp;&nbsp; EP</code>
+          <div style="color:var(--text-muted); font-size:10px; margin-top:3px;">Fields: Flight · Tail · ETD · NewETD · Gate · Dest · Carts · Bagroom · ExitScan · Delivery · Lead</div>
+        </div>
+      </div>
+      <textarea class="paste-area" id="paste-text" placeholder="Paste rows here..."></textarea>
+      <div class="btn-row">
+        <button class="btn btn-danger" id="paste-replace">Replace All</button>
+        <button class="btn btn-primary" id="paste-append">Append</button>
+      </div>
+    </div>
+
+    <!-- LEAD LINKS -->
+    <div class="tab-panel" data-panel="leadlinks">
+      <div style="margin-bottom:14px; font-size:13px; color:var(--text-dim); letter-spacing:0.04em; line-height:1.5;">
+        <strong style="color:var(--gold);">Mobile Team Lead Links</strong> — each lead opens their phone view filtered to only their flights.
+        Tap "Copy" to copy the link; the team lead pastes it into Safari/Chrome on their phone and bookmarks the page to home screen.
+        Each lead view is read-only on the projection screens but fully actionable on a phone.
+      </div>
+      <div id="lead-link-list"></div>
+      <div style="margin-top:18px; padding:11px 14px; background:var(--row-base); border-left:3px solid var(--cyan); border-radius:3px; font-size:12px; color:var(--text-dim); line-height:1.5;">
+        <strong style="color:var(--cyan); display:block; margin-bottom:4px;">Pier View Links (for the 4 TV screens)</strong>
+        <div id="pier-link-list"></div>
+      </div>
+    </div>
+
+    <!-- REPORTS -->
+    <div class="tab-panel" data-panel="reports">
+      <div style="margin-bottom:14px; font-size:13px; color:var(--text-dim); line-height:1.5;">
+        Export today's shift data as CSV for shift handoff review, management reporting, or analysis.
+        Includes every flight with all workflow timestamps, agent attribution, variance, and delay reasons.
+      </div>
+      <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-bottom:18px;">
+        <div style="background:var(--row-base); border:1px solid var(--row-line); border-radius:5px; padding:14px;">
+          <div style="font-family:'Barlow Condensed'; font-size:11px; color:var(--text-dim); letter-spacing:0.14em; text-transform:uppercase; margin-bottom:6px;">Flights Today</div>
+          <div style="font-family:'JetBrains Mono'; font-weight:700; font-size:26px; color:var(--gold-bright);" id="rep-total">0</div>
+        </div>
+        <div style="background:var(--row-base); border:1px solid var(--row-line); border-radius:5px; padding:14px;">
+          <div style="font-family:'Barlow Condensed'; font-size:11px; color:var(--text-dim); letter-spacing:0.14em; text-transform:uppercase; margin-bottom:6px;">Completed</div>
+          <div style="font-family:'JetBrains Mono'; font-weight:700; font-size:26px; color:var(--green-glow);" id="rep-complete">0</div>
+        </div>
+        <div style="background:var(--row-base); border:1px solid var(--row-line); border-radius:5px; padding:14px;">
+          <div style="font-family:'Barlow Condensed'; font-size:11px; color:var(--text-dim); letter-spacing:0.14em; text-transform:uppercase; margin-bottom:6px;">On-Time Cart Out</div>
+          <div style="font-family:'JetBrains Mono'; font-weight:700; font-size:26px; color:var(--gold-bright);" id="rep-otp">—</div>
+        </div>
+        <div style="background:var(--row-base); border:1px solid var(--row-line); border-radius:5px; padding:14px;">
+          <div style="font-family:'Barlow Condensed'; font-size:11px; color:var(--text-dim); letter-spacing:0.14em; text-transform:uppercase; margin-bottom:6px;">Missing Bags</div>
+          <div style="font-family:'JetBrains Mono'; font-weight:700; font-size:26px; color:var(--red-glow);" id="rep-missing">0</div>
+        </div>
+      </div>
+      <div class="btn-row">
+        <button class="btn" id="rep-feedback">Export Feedback CSV</button>
+        <button class="btn btn-primary" id="rep-csv">📊 Download Daily CSV Report</button>
+      </div>
+      <div style="margin-top:14px; padding:11px 14px; background:var(--row-base); border-left:3px solid var(--gold); border-radius:3px; font-size:11px; color:var(--text-dim); line-height:1.5;">
+        <strong style="color:var(--gold);">CSV columns:</strong> Date, Flight, Tail, Destination, Gate, Pier, Sched ETD, New ETD, Cutoff, Cart Out, Variance (min), Gate Arrival, On-Time Y/N, Bagroom Agent, Exit Scan Agent, Exit Scan Emp #, Delivery Agent, Delivery Emp #, Team Lead, Missing Bags, Reroute Notes, Delay Reason, Final Status, plus exact timestamps for Exit Scan / Cart Out / Delivered / Completed.
+      </div>
+    </div>
+
+    <!-- SETTINGS -->
+    <div class="tab-panel" data-panel="settings">
+      <div class="settings-row">
+        <div>
+          <label>Station Code</label>
+          <span class="help">Shown in header (e.g. AUS)</span>
+        </div>
+        <input type="text" id="s-station" value="AUS" maxlength="4" />
+      </div>
+      <div class="settings-row">
+        <div>
+          <label>Bag Cutoff Buffer (min before ETD)</label>
+          <span class="help">Bags must be at A/C this many min before departure (Delta domestic = 45)</span>
+        </div>
+        <input type="number" id="s-cutoff" value="45" min="15" max="120" />
+      </div>
+      <div class="settings-row">
+        <div>
+          <label>Pull alert window (min)</label>
+          <span class="help">Row turns amber when cutoff is this close</span>
+        </div>
+        <input type="number" id="s-prep" value="15" min="5" max="60" />
+      </div>
+      <div class="settings-row">
+        <div>
+          <label>Final-call window (min)</label>
+          <span class="help">Row turns orange when cutoff is this close</span>
+        </div>
+        <input type="number" id="s-imminent" value="5" min="1" max="30" />
+      </div>
+      <div class="settings-row">
+        <div>
+          <label>Auto-archive departed (min after)</label>
+          <span class="help">Hide flights that departed this long ago</span>
+        </div>
+        <input type="number" id="s-archive" value="30" min="5" max="240" />
+      </div>
+      <div class="settings-row">
+        <div>
+          <label>On-Time Pull Target (%)</label>
+          <span class="help">Target for the KPI strip</span>
+        </div>
+        <input type="number" id="s-otp-target" value="90" min="50" max="100" />
+      </div>
+      <div class="settings-row">
+        <div>
+          <label>Amber Warning Window (min before ETD)</label>
+          <span class="help">Row turns amber if cart hasn't gone out this close to departure</span>
+        </div>
+        <input type="number" id="s-amberwarn" value="60" min="30" max="180" />
+      </div>
+      <div class="settings-row">
+        <div>
+          <label>Show critical toast banner</label>
+          <span class="help">Big alert when bags hit cutoff window</span>
+        </div>
+        <input type="checkbox" id="s-toast" checked />
+      </div>
+      <div class="settings-row" style="border-top:1px solid var(--row-line); padding-top:14px;">
+        <div>
+          <label>Live Data Feed URL</label>
+          <span class="help">Your FlightAware AeroAPI proxy (Cloudflare Worker) that returns JSON. Schedule fields (ETD, gate, status) update automatically — your team's entries are never overwritten.</span>
+        </div>
+        <input type="text" id="s-feedurl" placeholder="https://delta-aus-feed.you.workers.dev" />
+      </div>
+      <div class="settings-row">
+        <div>
+          <label>Auto-refresh every (seconds)</label>
+          <span class="help">0 = off · recommended 120 to respect API limits</span>
+        </div>
+        <input type="number" id="s-feedint" value="120" min="0" max="3600" />
+      </div>
+      <div class="settings-row">
+        <div>
+          <label>Feed status</label>
+          <span class="help" id="feed-status">Not configured</span>
+        </div>
+        <button class="btn" id="s-feed-refresh" type="button">Refresh now</button>
+      </div>
+      <div class="settings-row">
+        <div>
+          <label>Test clock (HH:MM 24h)</label>
+          <span class="help">Override the system clock for demo / training</span>
+        </div>
+        <input type="text" id="s-testtime" placeholder="07:00" />
+      </div>
+      <div class="btn-row">
+        <button class="btn btn-danger" id="s-reset-trial">Reset Trial Data</button>
+        <button class="btn btn-danger" id="s-clear">Clear All Flights</button>
+        <button class="btn btn-primary" id="s-save">Save Settings</button>
+      </div>
+      <div style="margin-top:18px; padding-top:14px; border-top:1px solid var(--row-line); font-size:11px; color:var(--text-dim); letter-spacing:0.04em;">
+        Keyboard: <code style="background:var(--row-base); padding:2px 6px; border-radius:3px; color:var(--gold-bright); font-family:'JetBrains Mono';">E</code> = Ops Entry · <code style="background:var(--row-base); padding:2px 6px; border-radius:3px; color:var(--gold-bright); font-family:'JetBrains Mono';">H</code> = Handoff · <code style="background:var(--row-base); padding:2px 6px; border-radius:3px; color:var(--gold-bright); font-family:'JetBrains Mono';">F</code> = Fullscreen
+      </div>
+    </div>
+  </div>
+</aside>
+
+<!-- ============ HANDOFF DRAWER ============ -->
+<aside class="drawer handoff-drawer" id="handoff-drawer">
+  <div class="drawer-head">
+    <h2>Shift Handoff Log</h2>
+    <button class="close-btn" id="handoff-close">Close · Esc</button>
+  </div>
+  <div class="drawer-body">
+    <div class="handoff-add">
+      <textarea id="handoff-text" placeholder="Add a handoff note for the next shift. e.g. 'DL 1567 — 1 bag in TSA secondary, will forward on DL 2371 1:00 PM'"></textarea>
+      <div class="handoff-add-row">
+        <select id="handoff-cat">
+          <option value="general">General Note</option>
+          <option value="missing-bag">Missing Bag</option>
+          <option value="reroute">Pending Reroute</option>
+          <option value="late-bag">Late Bag / Transfer</option>
+          <option value="gate-change">Gate Change</option>
+        </select>
+        <input id="handoff-author" type="text" placeholder="Initials" maxlength="6" />
+        <button class="btn btn-primary" id="handoff-add">+ Add Note</button>
+      </div>
+    </div>
+    <div style="display:flex; gap:8px; margin-bottom:14px; align-items:center;">
+      <span style="font-size:11px; color:var(--text-dim); letter-spacing:0.12em; text-transform:uppercase;">Filter:</span>
+      <button class="mini-btn active" data-filter="all">All</button>
+      <button class="mini-btn" data-filter="open">Open</button>
+      <button class="mini-btn" data-filter="resolved">Resolved</button>
+    </div>
+    <div class="handoff-list" id="handoff-list"></div>
+  </div>
+</aside>
+
+<!-- ============ CREDENTIALS MODAL (agent initials + employee number) ============ -->
+<div class="cred-modal" id="cred-modal">
+  <div class="cred-box" role="dialog" aria-modal="true">
+    <h3 id="cred-title">Agent Sign-Off</h3>
+    <div class="cred-action" id="cred-action">Exit Scan</div>
+    <div class="cred-flight" id="cred-flight">DL ____ &rarr; <strong>___</strong></div>
+    <label for="cred-initials">Your Initials</label>
+    <input id="cred-initials" type="text" maxlength="6" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="EP" />
+    <label for="cred-empid">Employee Number</label>
+    <input id="cred-empid" class="cred-empid" type="text" inputmode="numeric" pattern="[0-9]*" maxlength="10" autocomplete="off" placeholder="123456" />
+    <div class="cred-error" id="cred-error">Both fields are required.</div>
+    <div class="cred-actions">
+      <button class="cred-btn secondary" id="cred-cancel">Cancel</button>
+      <button class="cred-btn primary" id="cred-confirm">Confirm &amp; Save</button>
+    </div>
+    <div class="cred-hint">Tap Confirm or press Enter &mdash; saved for the rest of this session.</div>
+  </div>
+</div>
+
+<!-- ============ FEEDBACK DRAWER ============ -->
+<aside class="drawer feedback-drawer" id="feedback-drawer">
+  <div class="drawer-head">
+    <h2>Trial Feedback</h2>
+    <button class="close-btn" id="feedback-close">Close · Esc</button>
+  </div>
+  <div class="drawer-body">
+    <div style="margin-bottom:16px; font-size:13px; color:var(--text-dim); line-height:1.5; padding:10px 12px; background:var(--row-base); border-left:3px solid var(--gold); border-radius:3px;">
+      <strong style="color:var(--gold);">Help us improve the trial.</strong> Tap any option to log feedback — no typing needed. Management reviews these at end of shift.
+    </div>
+    <div class="feedback-options" id="feedback-options">
+      <button class="fb-opt fb-positive" data-fb="timer-helpful"><span class="fb-icon">⏱</span><span class="fb-label">Timer was helpful</span></button>
+      <button class="fb-opt fb-positive" data-fb="mobile-link-useful"><span class="fb-icon">📱</span><span class="fb-label">Mobile link useful</span></button>
+      <button class="fb-opt fb-negative" data-fb="screen-hard-to-read"><span class="fb-icon">🔍</span><span class="fb-label">Screen was hard to read</span></button>
+      <button class="fb-opt fb-negative" data-fb="flight-missing"><span class="fb-icon">📋</span><span class="fb-label">Flight missing from list</span></button>
+      <button class="fb-opt fb-negative" data-fb="gate-changed"><span class="fb-icon">🚪</span><span class="fb-label">Gate changed (not caught)</span></button>
+      <button class="fb-opt fb-negative" data-fb="agent-unclear"><span class="fb-icon">❓</span><span class="fb-label">Agent assignment unclear</span></button>
+    </div>
+    <div style="margin-top:18px;">
+      <label style="display:block; font-size:11px; font-weight:700; letter-spacing:0.14em; color:var(--text-dim); text-transform:uppercase; margin-bottom:5px;">Other Note (Optional)</label>
+      <textarea id="fb-other-text" rows="2" style="width:100%; background:var(--bg); border:1px solid var(--row-line); color:var(--white); padding:9px 11px; border-radius:5px; font-family:'Barlow Condensed'; font-size:14px; resize:vertical;" placeholder="e.g. The cart out button needs to be bigger on mobile"></textarea>
+      <div style="display:flex; gap:8px; margin-top:8px;">
+        <input id="fb-other-author" type="text" maxlength="6" placeholder="Initials" style="width:100px; background:var(--bg); border:1px solid var(--row-line); color:var(--white); padding:7px 10px; border-radius:4px; font-family:'JetBrains Mono'; font-size:13px; text-transform:uppercase;" />
+        <button class="btn btn-primary" id="fb-other-submit" style="margin-left:auto;">+ Add Note</button>
+      </div>
+    </div>
+    <div id="feedback-list-wrap">
+      <div style="margin-top:24px; font-size:11px; color:var(--text-muted); letter-spacing:0.12em; text-transform:uppercase;">Recent Feedback</div>
+      <div class="feedback-list" id="feedback-list"></div>
+    </div>
+  </div>
+</aside>
+
+<script>
+/* ====================================================================
+   DELTA AUS BAGROOM OPS — PRO EDITION
+   ==================================================================== */
+
+const LS_FLIGHTS = 'bagtrial_flights_v1';
+const LS_SETTINGS = 'bagtrial_settings_v1';
+const LS_HANDOFF = 'bagtrial_handoff_v1';
+const LS_FEEDBACK = 'bagtrial_feedback_v1';
+
+/* ============ URL ROUTING ============ */
+const VIEW = (() => {
+  const p = new URLSearchParams(window.location.search);
+  const view = (p.get('view') || 'all').toLowerCase();
+  const lead = (p.get('lead') || '').toUpperCase();
+  return { view, lead };
+})();
+
+const PIER_COLORS = {
+  A: '#4F8FFF',
+  B: '#A78BFA',
+  C: '#EC4899',
+  D: '#FB923C'
+};
+const PIER_TO_LEAD = { A: 'EP', B: 'MS', C: 'AM', D: 'SR' };
+
+const STATUS_FLOW = ['assigned', 'exitScanned', 'cartOut', 'deliveredAtGate', 'complete'];
+const STATUS_LABELS = {
+  assigned: 'Assigned',
+  exitScanned: 'Exit Scanned',
+  cartOut: 'Cart Out',
+  deliveredAtGate: 'Delivered at Gate',
+  missingBag: 'Missing Bag',
+  complete: 'Complete'
+};
+const STATUS_SHORT = {
+  assigned: 'ASSGN',
+  exitScanned: 'SCAN',
+  cartOut: 'CART OUT',
+  deliveredAtGate: 'AT GATE',
+  missingBag: 'MISSING',
+  complete: 'COMPLETE'
+};
+
+const DEFAULT_FLIGHTS = []; /* demo data removed by scripts/build-board.mjs — live feed populates this */
+const DEFAULT_HANDOFF = []; /* demo data removed by scripts/build-board.mjs — live feed populates this */
+
+let flights = loadFlights();
+let settings = loadSettings();
+let handoff = loadHandoff();
+let feedback = loadFeedback();
+let alerted = new Set();
+let editingId = null;
+let bootTime = Date.now();
+let handoffFilter = 'all';
+let cachedInitials = ''; // remembered for status button clicks during a session
+
+// Live board: real system clock is used unless a Test clock is explicitly set in Settings.
+
+function loadFlights() {
+  try {
+    const raw = localStorage.getItem(LS_FLIGHTS);
+    if (raw) return JSON.parse(raw);
+  } catch (e) {}
+  return [];  // live board starts empty — flights come from the live feed, paste, or manual entry
+}
+function saveFlights() { try { localStorage.setItem(LS_FLIGHTS, JSON.stringify(flights)); } catch (e) {} }
+function loadSettings() {
+  try {
+    const raw = localStorage.getItem(LS_SETTINGS);
+    if (raw) return JSON.parse(raw);
+  } catch (e) {}
+  return {
+    station: 'AUS', cutoffBuffer: 45, prepWindow: 15, imminentWindow: 5,
+    archiveAfter: 30, showToast: true, testTime: '', otpTarget: 90,
+    amberWarnMin: 60,  // amber warning when ETD is this many minutes away
+    feedUrl: '', feedInterval: 120  // live AeroAPI proxy feed
+  };
+}
+function saveSettings() { try { localStorage.setItem(LS_SETTINGS, JSON.stringify(settings)); } catch (e) {} }
+function loadHandoff() {
+  try {
+    const raw = localStorage.getItem(LS_HANDOFF);
+    if (raw) return JSON.parse(raw);
+  } catch (e) {}
+  return DEFAULT_HANDOFF;
+}
+function saveHandoff() { try { localStorage.setItem(LS_HANDOFF, JSON.stringify(handoff)); } catch (e) {} }
+function loadFeedback() {
+  try {
+    const raw = localStorage.getItem(LS_FEEDBACK);
+    if (raw) return JSON.parse(raw);
+  } catch (e) {}
+  return [];
+}
+function saveFeedback() { try { localStorage.setItem(LS_FEEDBACK, JSON.stringify(feedback)); } catch (e) {} }
+
+/* ----- TIME HELPERS ----- */
+function parseTimeToMinutes(s) {
+  if (!s) return null;
+  s = String(s).trim().toUpperCase();
+  const ampm = /^(\d{1,2}):(\d{2})\s*(AM|PM)$/.exec(s);
+  if (ampm) {
+    let h = +ampm[1], m = +ampm[2];
+    if (ampm[3] === 'PM' && h !== 12) h += 12;
+    if (ampm[3] === 'AM' && h === 12) h = 0;
+    return h * 60 + m;
+  }
+  const h24 = /^(\d{1,2}):(\d{2})$/.exec(s);
+  if (h24) return (+h24[1]) * 60 + (+h24[2]);
+  return null;
+}
+function nowMinutes() {
+  if (settings.testTime) {
+    const t = parseTimeToMinutes(settings.testTime);
+    if (t != null) {
+      const elapsed = (Date.now() - bootTime) / 1000 / 60;
+      return t + elapsed;
+    }
+  }
+  const d = new Date();
+  return d.getHours() * 60 + d.getMinutes() + d.getSeconds() / 60;
+}
+function fmtCountdown(diffMin) {
+  if (diffMin == null) return '—';
+  const abs = Math.abs(diffMin);
+  const h = Math.floor(abs / 60);
+  const m = Math.floor(abs % 60);
+  const s = Math.floor((abs * 60) % 60);
+  const sign = diffMin < 0 ? '−' : '';
+  if (h > 0) return sign + h + 'H ' + String(m).padStart(2, '0') + 'M';
+  if (m >= 1) return sign + m + 'M ' + String(s).padStart(2, '0') + 'S';
+  return sign + s + 'S';
+}
+function fmtTime(mins) {
+  if (mins == null) return '—';
+  let m = ((mins % 1440) + 1440) % 1440;
+  const h24 = Math.floor(m / 60);
+  const mm = Math.floor(m % 60);
+  const ampm = h24 >= 12 ? 'PM' : 'AM';
+  let h = h24 % 12; if (h === 0) h = 12;
+  return h + ':' + String(mm).padStart(2, '0') + ' ' + ampm;
+}
+
+/* ----- STATUS DETECTION ----- */
+function deriveStatus(f) {
+  if (f.status === 'canceled') return 'canceled';
+  if (f.status === 'diverted') return 'diverted';
+  if (f.status === 'departed') return 'departed';
+  if (f.status === 'boarding') return 'boarding';
+  const sched = parseTimeToMinutes(f.sched);
+  const eta = f.eta ? parseTimeToMinutes(f.eta) : null;
+  if (eta != null && sched != null) {
+    const diff = eta - sched;
+    if (diff <= -2) return 'early';
+    if (diff >= 5) return 'delayed';
+    return 'ontime';
+  }
+  return 'ontime';
+}
+function statusLabel(s) {
+  return ({ ontime:'On Time', early:'Early', delayed:'Delayed', departed:'Departed',
+            boarding:'Boarding', canceled:'Canceled', diverted:'Diverted' })[s] || s;
+}
+
+function urgencyClass(timeToCutoff, timeToEtd, manual, f) {
+  if (manual === 'canceled') return 'r-canceled';
+  if (manual === 'complete') return 'r-complete';
+  if (manual === 'departed' || (timeToEtd != null && timeToEtd <= -2)) return 'r-departed';
+  if (timeToEtd == null || timeToCutoff == null) return '';
+  if (timeToCutoff <= 0 && timeToEtd > -2) return 'r-critical';
+  if (timeToCutoff <= settings.imminentWindow) return 'r-imminent';
+  if (timeToCutoff <= settings.prepWindow) return 'r-prep';
+  // Amber warning: inside warning window AND cart not yet out
+  const amberWindow = settings.amberWarnMin || 60;
+  const cartOut = f && (f.status === 'cartOut' || f.status === 'deliveredAtGate' || f.status === 'complete' || f.cartOutActual);
+  if (timeToEtd <= amberWindow && !cartOut) return 'r-amber';
+  if (timeToCutoff <= 30) return 'r-soon';
+  return '';
+}
+
+function operator(tail) {
+  if (!tail) return '';
+  const t = tail.toUpperCase();
+  if (/SY$/.test(t)) return 'SKYWEST';
+  if (/(XJ|PQ)$/.test(t)) return 'ENDEAVOR';
+  if (/(DN|DU|NN|AT|DH|DL|DZ|NA|DC)$/.test(t)) return 'MAINLINE';
+  return '';
+}
+
+/* ----- VARIANCE CALCULATION ----- */
+function computeVariance(f) {
+  if (!f.cartOutActual) return null;
+  const sched = parseTimeToMinutes(f.eta || f.sched);
+  const actual = parseTimeToMinutes(f.cartOutActual);
+  if (sched == null || actual == null) return null;
+  const pullTarget = sched - settings.cutoffBuffer;
+  return pullTarget - actual; // positive = early (good), negative = late (bad)
+}
+
+/* ----- KPI CALCULATION ----- */
+function computeKPIs() {
+  const active = flights.filter(f => f.status !== 'canceled');
+  const total = active.length;
+  const withCartOut = active.filter(f => f.cartOutActual);
+  const onTime = withCartOut.filter(f => {
+    const v = computeVariance(f);
+    return v != null && v >= 0;
+  });
+  const otp = withCartOut.length > 0
+    ? Math.round((onTime.length / withCartOut.length) * 100)
+    : null;
+  const variances = withCartOut.map(f => computeVariance(f)).filter(v => v != null);
+  const avgVariance = variances.length > 0
+    ? Math.round(variances.reduce((s, v) => s + v, 0) / variances.length * 10) / 10
+    : null;
+  const missingBagsTotal = active.reduce((s, f) => s + (+f.missingBags || 0), 0);
+  const reroutes = active.filter(f => f.rerouteNotes && f.rerouteNotes.trim()).length;
+  const activeDelays = active.filter(f => {
+    if (f.delayReason) return true;
+    const v = computeVariance(f);
+    return v != null && v <= -5;
+  }).length;
+  const departed = flights.filter(f => f.status === 'departed' || f.status === 'complete').length;
+  const completed = active.filter(f => f.status === 'complete').length;
+  const lateCartOut = withCartOut.filter(f => { const v = computeVariance(f); return v != null && v < 0; }).length;
+  // Pier breakdown
+  const byPier = { A: 0, B: 0, C: 0, D: 0 };
+  active.forEach(f => { if (f.pierSide && byPier.hasOwnProperty(f.pierSide)) byPier[f.pierSide]++; });
+  // Lead breakdown
+  const byLead = {};
+  active.forEach(f => { if (f.teamLead) byLead[f.teamLead] = (byLead[f.teamLead] || 0) + 1; });
+  // Urgent flights (inside cutoff window and cart not out)
+  const now = nowMinutes();
+  const urgent = active.filter(f => {
+    if (f.status === 'complete' || f.status === 'cartOut' || f.status === 'deliveredAtGate' || f.cartOutActual) return false;
+    const etdMin = parseTimeToMinutes(f.eta || f.sched);
+    if (etdMin == null) return false;
+    const timeToEtd = etdMin - now;
+    return timeToEtd <= settings.cutoffBuffer && timeToEtd > -2;
+  }).length;
+  return {
+    total, otp, avgVariance, missingBagsTotal, reroutes, activeDelays,
+    departed, completed, lateCartOut, urgent,
+    withCartOutCount: withCartOut.length, byPier, byLead
+  };
+}
+
+/* ----- CLOCK ----- */
+function updateClock() {
+  let h, m, s;
+  if (settings.testTime) {
+    const baseMins = parseTimeToMinutes(settings.testTime);
+    if (baseMins != null) {
+      const elapsedSec = (Date.now() - bootTime) / 1000;
+      const totalSec = Math.floor((baseMins * 60) + elapsedSec);
+      h = Math.floor(totalSec / 3600) % 24;
+      m = Math.floor((totalSec % 3600) / 60);
+      s = totalSec % 60;
+    } else {
+      const d = new Date();
+      h = d.getHours(); m = d.getMinutes(); s = d.getSeconds();
+    }
+  } else {
+    const d = new Date();
+    h = d.getHours(); m = d.getMinutes(); s = d.getSeconds();
+  }
+  const ampm = h >= 12 ? 'PM' : 'AM';
+  let dh = h % 12; if (dh === 0) dh = 12;
+  const mm = String(m).padStart(2, '0');
+  const ss = String(s).padStart(2, '0');
+  document.getElementById('clock').innerHTML =
+    dh + '<span class="colon">:</span>' + mm + '<span class="colon">:</span>' + ss +
+    ' <span style="font-size:0.55em;color:var(--gold);margin-left:6px">' + ampm + '</span>';
+  const d2 = new Date();
+  const dateOpts = { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' };
+  document.getElementById('clock-date').textContent =
+    d2.toLocaleDateString('en-US', dateOpts).toUpperCase();
+}
+
+/* ----- RENDER KPIs ----- */
+function renderKPIs() {
+  const k = computeKPIs();
+  const otpClass = k.otp == null ? '' : (k.otp >= settings.otpTarget ? 'good' : (k.otp >= 75 ? 'warn' : 'bad'));
+  const missingClass = k.missingBagsTotal === 0 ? 'good' : (k.missingBagsTotal <= 3 ? 'warn' : 'bad');
+  const urgentClass = k.urgent === 0 ? 'good' : (k.urgent <= 2 ? 'warn' : 'bad');
+
+  // Pier breakdown shown as inline tag list (only in 'all' view)
+  const pierSub = 'A:' + k.byPier.A + ' · B:' + k.byPier.B + ' · C:' + k.byPier.C + ' · D:' + k.byPier.D;
+  const leadCounts = Object.keys(k.byLead).map(l => l + ':' + k.byLead[l]).join(' · ') || '—';
+
+  const kpis = [
+    { cls: '', label: 'Flights Today', value: k.total, sub: k.completed + ' complete · ' + (k.total - k.completed) + ' active' },
+    { cls: urgentClass, label: 'Urgent · Inside Cutoff', value: k.urgent, sub: k.urgent === 0 ? 'Nothing critical' : 'Need bags out now' },
+    { cls: otpClass, label: 'On-Time Cart Out', value: k.otp == null ? '—' : k.otp + '<span class="kpi-unit">%</span>', sub: 'Target: ' + settings.otpTarget + '% · ' + k.lateCartOut + ' late · ' + k.withCartOutCount + ' tracked' },
+    { cls: '', label: 'Completed', value: k.completed, sub: 'Carts loaded & cleared' },
+    { cls: missingClass, label: 'Missing Bags', value: k.missingBagsTotal, sub: k.missingBagsTotal === 0 ? 'Clean shift' : 'Open searches' },
+    { cls: '', label: 'By Pier', value: '<span style="font-size:0.6em;letter-spacing:0;line-height:1.4;display:inline-block;">' + pierSub + '</span>', sub: 'Lead: ' + leadCounts },
+  ];
+
+  document.getElementById('kpi-strip').innerHTML = kpis.map(k =>
+    '<div class="kpi-tile ' + k.cls + '">' +
+      '<div class="kpi-label">' + k.label + '</div>' +
+      '<div class="kpi-value">' + k.value + '</div>' +
+      '<div class="kpi-sub">' + k.sub + '</div>' +
+    '</div>'
+  ).join('');
+}
+
+/* ----- VIEW FILTERING ----- */
+function applyViewFilter(arr) {
+  if (VIEW.view === 'piera' || VIEW.view === 'pierA') return arr.filter(f => f.pierSide === 'A');
+  if (VIEW.view === 'pierb' || VIEW.view === 'pierB') return arr.filter(f => f.pierSide === 'B');
+  if (VIEW.view === 'pierc' || VIEW.view === 'pierC') return arr.filter(f => f.pierSide === 'C');
+  if (VIEW.view === 'pierd' || VIEW.view === 'pierD') return arr.filter(f => f.pierSide === 'D');
+  if (VIEW.view === 'lead' && VIEW.lead) return arr.filter(f => (f.teamLead || '').toUpperCase() === VIEW.lead);
+  return arr;
+}
+
+function pierTag() {
+  const v = VIEW.view.toLowerCase();
+  if (v.startsWith('pier')) return v.charAt(4).toUpperCase();
+  return '';
+}
+
+function applyViewBanner() {
+  const banner = document.getElementById('view-banner');
+  const v = VIEW.view.toLowerCase();
+  document.body.classList.remove('view-pierA','view-pierB','view-pierC','view-pierD','view-lead','view-all');
+  let html = '';
+  if (v.startsWith('pier')) {
+    const p = v.charAt(4).toUpperCase();
+    document.body.classList.add('view-pier' + p);
+    const count = flights.filter(f => f.pierSide === p).length;
+    const lead = PIER_TO_LEAD[p] || '?';
+    html = '<span class="vb-tag">Pier ' + p + '</span>' +
+      '<span class="vb-detail">' + count + ' flights · Lead: ' + lead + ' · This screen shows pier-' + p + ' departures only</span>' +
+      '<a class="vb-back" href="?view=all">← All Departures</a>';
+    banner.classList.add('show');
+  } else if (v === 'lead' && VIEW.lead) {
+    document.body.classList.add('view-lead');
+    const count = flights.filter(f => (f.teamLead || '').toUpperCase() === VIEW.lead).length;
+    html = '<span class="vb-tag">Lead ' + VIEW.lead + '</span>' +
+      '<span class="vb-detail">' + count + ' flights assigned · Mobile view</span>' +
+      '<a class="vb-back" href="?view=all">← Full Board</a>';
+    banner.classList.add('show');
+  } else {
+    document.body.classList.add('view-all');
+    banner.classList.remove('show');
+  }
+  banner.innerHTML = html;
+}
+
+/* ----- STATUS WORKFLOW ----- */
+function recordStatusTransition(flightId, newStatus, byInitials, empId) {
+  const f = flights.find(x => x.id === flightId);
+  if (!f) return;
+  if (!f.statusHistory) f.statusHistory = [];
+  f.status = newStatus;
+  f.statusHistory.push({
+    status: newStatus,
+    at: new Date().toISOString(),
+    by: (byInitials || '').toUpperCase(),
+    empId: (empId || '').toString()
+  });
+  // Auto-capture timestamps for known transitions
+  const now = new Date();
+  const hh = now.getHours() % 12 || 12;
+  const mm = String(now.getMinutes()).padStart(2,'0');
+  const ampm = now.getHours() >= 12 ? 'PM' : 'AM';
+  const tstr = hh + ':' + mm + ' ' + ampm;
+  if (newStatus === 'cartOut' && !f.cartOutActual) f.cartOutActual = tstr;
+  if (newStatus === 'deliveredAtGate' && !f.gateArrivalTime) f.gateArrivalTime = tstr;
+  // Also record the AGENT who did this step on the flight record itself (useful for reporting)
+  if (newStatus === 'exitScanned' && !f.exitScanAgent) f.exitScanAgent = (byInitials || '').toUpperCase();
+  if (newStatus === 'deliveredAtGate' && !f.deliveryAgent) f.deliveryAgent = (byInitials || '').toUpperCase();
+  saveFlights();
+  render();
+}
+
+/* ----- CREDENTIALS MODAL ----- */
+const CRED_MAP_KEY = 'bagtrial_empid_map_v1'; // map of initials → empId (per session)
+function getEmpIdFor(initials) {
+  try {
+    const m = JSON.parse(sessionStorage.getItem(CRED_MAP_KEY) || '{}');
+    return m[(initials || '').toUpperCase()] || '';
+  } catch (e) { return ''; }
+}
+function setEmpIdFor(initials, empId) {
+  try {
+    const m = JSON.parse(sessionStorage.getItem(CRED_MAP_KEY) || '{}');
+    m[(initials || '').toUpperCase()] = empId;
+    sessionStorage.setItem(CRED_MAP_KEY, JSON.stringify(m));
+  } catch (e) {}
+  cachedInitials = (initials || '').toUpperCase();
+}
+
+let _credResolve = null;
+function openCredModal({ action, flight, suggestion }) {
+  return new Promise(resolve => {
+    _credResolve = resolve;
+    document.getElementById('cred-action').textContent = action;
+    const flightHtml = flight
+      ? esc(flight.flight) + ' &rarr; <strong>' + esc(flight.dest || '?') + '</strong>'
+        + (flight.gate ? ' &middot; Gate ' + esc(flight.gate) : '')
+      : '';
+    document.getElementById('cred-flight').innerHTML = flightHtml;
+    const initInput = document.getElementById('cred-initials');
+    const empInput = document.getElementById('cred-empid');
+    // Suggested initials from role; fall back to last-used initials in session
+    const startInitials = (suggestion || cachedInitials || '').toUpperCase();
+    initInput.value = startInitials;
+    // Pre-fill empId from the map keyed by THESE initials (not last person's)
+    empInput.value = getEmpIdFor(startInitials);
+    document.getElementById('cred-error').classList.remove('show');
+    document.getElementById('cred-modal').classList.add('show');
+    setTimeout(() => {
+      if (!initInput.value) initInput.focus();
+      else if (!empInput.value) empInput.focus();
+      else empInput.focus();
+    }, 60);
+  });
+}
+
+// When agent types in the initials field, re-fetch their cached empId
+function handleInitialsBlur() {
+  const initInput = document.getElementById('cred-initials');
+  const empInput = document.getElementById('cred-empid');
+  empInput.value = getEmpIdFor(initInput.value);
+}
+
+function closeCredModal(result) {
+  document.getElementById('cred-modal').classList.remove('show');
+  if (_credResolve) {
+    const r = _credResolve;
+    _credResolve = null;
+    r(result);
+  }
+}
+function submitCredModal() {
+  const initials = document.getElementById('cred-initials').value.trim().toUpperCase();
+  const empId = document.getElementById('cred-empid').value.trim();
+  const err = document.getElementById('cred-error');
+  if (!initials || initials.length < 2) {
+    err.textContent = 'Initials required (at least 2 characters)';
+    err.classList.add('show');
+    document.getElementById('cred-initials').focus();
+    return;
+  }
+  if (!empId || !/^[0-9]{3,10}$/.test(empId)) {
+    err.textContent = 'Employee number required (3–10 digits)';
+    err.classList.add('show');
+    document.getElementById('cred-empid').focus();
+    return;
+  }
+  setEmpIdFor(initials, empId);
+  closeCredModal({ initials, empId });
+}
+
+async function promptForInitials(flightId, newStatus) {
+  // Try to suggest based on the role for that status
+  const f = flights.find(x => x.id === flightId);
+  let suggestion = '';
+  if (f) {
+    if (newStatus === 'exitScanned') suggestion = f.exitScanAgent || '';
+    else if (newStatus === 'cartOut') suggestion = f.bagroomAgent || '';
+    else if (newStatus === 'deliveredAtGate') suggestion = f.deliveryAgent || '';
+    else if (newStatus === 'complete') suggestion = f.teamLead || '';
+    if (suggestion && suggestion.includes('/')) suggestion = suggestion.split('/')[0];
+  }
+  const action = STATUS_LABELS[newStatus] || newStatus;
+  const result = await openCredModal({ action, flight: f, suggestion });
+  if (!result) return; // canceled
+  recordStatusTransition(flightId, newStatus, result.initials, result.empId);
+}
+
+window.advanceStatus = function(flightId, newStatus, ev) {
+  if (ev && ev.stopPropagation) ev.stopPropagation();
+  promptForInitials(flightId, newStatus);
+};
+
+/* ----- QUICK-ACTION FUNCTIONS (manual override for gate/delay/cancel) ----- */
+window.quickGateChange = function(flightId, ev) {
+  if (ev && ev.stopPropagation) ev.stopPropagation();
+  const f = flights.find(x => x.id === flightId);
+  if (!f) return;
+  const curr = f.gate || '(none)';
+  const newGate = prompt('Change gate for ' + f.flight + ' → ' + (f.dest || '?') + '\n\nCurrent gate: ' + curr + '\nEnter new gate number (e.g. 10):', curr === '(none)' ? '' : curr);
+  if (newGate === null) return;
+  const cleaned = newGate.trim().replace(/^0+(?=\d)/, '').padStart(2, '0');
+  if (!cleaned || cleaned === curr) return;
+  // Record the previous gate so the badge shows
+  if (f.gate && f.gate !== cleaned) {
+    f.prevGate = f.gate;
+    f.gateChangedAt = new Date().toISOString();
+  }
+  f.gate = cleaned;
+  // Auto-update pier from new gate (unless manually overridden)
+  const newPier = pierFromGate(cleaned);
+  if (newPier && newPier !== f.pierSide) {
+    f.pierSide = newPier;
+    f.teamLead = PIER_TO_LEAD[newPier] || f.teamLead;
+  }
+  saveFlights();
+  render();
+};
+
+window.quickDelay = function(flightId, ev) {
+  if (ev && ev.stopPropagation) ev.stopPropagation();
+  const f = flights.find(x => x.id === flightId);
+  if (!f) return;
+  const sched = f.sched || '?';
+  const curEta = f.eta || sched;
+  const newEta = prompt('Update ETD for ' + f.flight + ' → ' + (f.dest || '?') + '\n\nScheduled: ' + sched + '\nCurrent ETD: ' + curEta + '\n\nEnter new ETD (e.g. 3:45 PM) — leave blank to clear delay:', curEta === sched ? '' : curEta);
+  if (newEta === null) return;
+  const trimmed = newEta.trim();
+  if (trimmed === '' || trimmed === sched) {
+    // Clearing the delay
+    f.eta = '';
+    f.delayReason = '';
+    saveFlights();
+    render();
+    return;
+  }
+  f.eta = trimmed;
+  // Prompt for delay reason
+  const reasons = ['Late inbound aircraft','Late bags from TSA','Late transfer bags','Crew shortage','Crew rest extension','Belt jam','Gate change','Weather','Bag search','Oversize baggage delay','Other'];
+  const list = reasons.map((r,i) => (i+1) + '. ' + r).join('\n');
+  const choice = prompt('Reason for delay (enter number or type custom reason):\n\n' + list, f.delayReason || '');
+  if (choice !== null) {
+    const num = parseInt(choice, 10);
+    if (num >= 1 && num <= reasons.length) f.delayReason = reasons[num - 1];
+    else if (choice.trim()) f.delayReason = choice.trim();
+  }
+  saveFlights();
+  render();
+};
+
+window.quickCancel = function(flightId, ev) {
+  if (ev && ev.stopPropagation) ev.stopPropagation();
+  const f = flights.find(x => x.id === flightId);
+  if (!f) return;
+  if (f.status === 'canceled') {
+    // Restore
+    if (!confirm('Restore ' + f.flight + ' from canceled status?')) return;
+    f.status = '';
+    f.delayReason = '';
+    if (!f.statusHistory) f.statusHistory = [];
+    f.statusHistory.push({ status:'restored', at:new Date().toISOString(), by:(cachedInitials || '') });
+  } else {
+    if (!confirm('Cancel ' + f.flight + ' → ' + (f.dest || '?') + '?\n\nThis marks the flight as canceled and notifies the team.')) return;
+    const reason = prompt('Cancel reason (optional):', f.delayReason || '');
+    if (reason !== null && reason.trim()) f.delayReason = reason.trim();
+    f.status = 'canceled';
+    if (!f.statusHistory) f.statusHistory = [];
+    f.statusHistory.push({ status:'canceled', at:new Date().toISOString(), by:(cachedInitials || '') });
+  }
+  saveFlights();
+  render();
+};
+
+function quickActionsHTML(f) {
+  // Don't show quick actions for already-departed flights — they're history
+  if (f.status === 'complete' || (f.statusHistory && f.statusHistory.length && f.statusHistory[f.statusHistory.length-1].status === 'complete')) {
+    return '';
+  }
+  const isCanceled = f.status === 'canceled';
+  const buttons = [];
+  if (!isCanceled) {
+    buttons.push('<button class="qa-btn qa-gate" onclick="quickGateChange(\'' + f.id + '\', event)" title="Change gate">🚪 Gate</button>');
+    buttons.push('<button class="qa-btn qa-delay" onclick="quickDelay(\'' + f.id + '\', event)" title="Update ETD / delay">⏰ Delay</button>');
+    buttons.push('<button class="qa-btn qa-cancel" onclick="quickCancel(\'' + f.id + '\', event)" title="Cancel flight">✕ Cancel</button>');
+  } else {
+    buttons.push('<button class="qa-btn qa-restore" onclick="quickCancel(\'' + f.id + '\', event)" title="Restore from canceled">↺ Restore</button>');
+  }
+  return '<div class="quick-actions">' + buttons.join('') + '</div>';
+}
+
+function nextStatus(current) {
+  if (!current || current === '') return 'assigned';
+  if (current === 'missingBag') return 'cartOut'; // resume after resolving
+  const idx = STATUS_FLOW.indexOf(current);
+  if (idx < 0 || idx >= STATUS_FLOW.length - 1) return null;
+  return STATUS_FLOW[idx + 1];
+}
+
+function statusButtonsHTML(f, timeToEtd) {
+  if (f.status === 'canceled' || f.status === 'diverted') return '';
+  const cur = f.status || '';
+  const buttons = [];
+  // Workflow pill (current state)
+  if (cur && STATUS_LABELS[cur]) {
+    buttons.push('<span class="workflow-pill wf-' + cur + '">' + STATUS_LABELS[cur] + '</span>');
+  } else {
+    buttons.push('<span class="workflow-pill wf-assigned" style="opacity:0.5">— Pending —</span>');
+  }
+  // Next-step button (with gating logic)
+  const next = nextStatus(cur);
+  if (next) {
+    // Exit Scan window: only show button when within 47 minutes of departure
+    const EXIT_SCAN_WINDOW = 47;
+    if (next === 'exitScanned') {
+      if (timeToEtd != null && timeToEtd > EXIT_SCAN_WINDOW) {
+        const mins = Math.round(timeToEtd - EXIT_SCAN_WINDOW);
+        buttons.push('<button class="sb-btn sb-locked" disabled title="Exit Scan opens at 47 min before departure">🔒 Scan opens in ' + mins + 'm</button>');
+      } else {
+        buttons.push('<button class="sb-btn sb-next" onclick="advanceStatus(\'' + f.id + '\',\'' + next + '\', event)">→ ' + STATUS_LABELS[next] + '</button>');
+      }
+    } else if (next === 'deliveredAtGate' && cur === 'cartOut') {
+      // Reminder treatment: cart is out, delivery agent must click when bags reach gate
+      buttons.push('<button class="sb-btn sb-next sb-reminder" onclick="advanceStatus(\'' + f.id + '\',\'' + next + '\', event)" title="Click once carts are parked at gate">📍 ' + STATUS_LABELS[next] + '</button>');
+    } else {
+      buttons.push('<button class="sb-btn sb-next" onclick="advanceStatus(\'' + f.id + '\',\'' + next + '\', event)">→ ' + STATUS_LABELS[next] + '</button>');
+    }
+  }
+  // Missing-bag button (unless already complete/canceled)
+  if (cur !== 'complete' && cur !== 'missingBag') {
+    buttons.push('<button class="sb-btn sb-missing" onclick="advanceStatus(\'' + f.id + '\',\'missingBag\', event)">⚠ Missing</button>');
+  }
+  return '<div class="status-buttons">' + buttons.join('') + '</div>';
+}
+
+/* ----- MAIN RENDER ----- */
+function render() {
+  const now = nowMinutes();
+  const rowsEl = document.getElementById('rows');
+
+  document.getElementById('station-label').textContent = settings.station + ' · Live Departures Board';
+  applyViewBanner();
+
+  let visibleFlights = applyViewFilter(flights);
+
+  const enriched = visibleFlights.map(f => {
+    const sched = parseTimeToMinutes(f.sched);
+    const etd = f.eta ? parseTimeToMinutes(f.eta) : sched;
+    const cutoff = etd != null ? etd - settings.cutoffBuffer : null;
+    const timeToCutoff = cutoff != null ? cutoff - now : null;
+    const timeToEtd = etd != null ? etd - now : null;
+    const status = deriveStatus(f);
+    const isDeparted = status === 'departed' || (timeToEtd != null && timeToEtd < -2);
+    const isCanceled = status === 'canceled';
+    const isArchived = isDeparted && timeToEtd != null && timeToEtd < -settings.archiveAfter;
+    const variance = computeVariance(f);
+    return { f, status, timeToCutoff, timeToEtd, etd, cutoff, isDeparted, isCanceled, isArchived, variance };
+  });
+
+  enriched.sort((a, b) => {
+    if (a.isCanceled && !b.isCanceled) return -1;
+    if (!a.isCanceled && b.isCanceled) return 1;
+    if (a.isArchived !== b.isArchived) return a.isArchived ? 1 : -1;
+    return (a.etd ?? 9999) - (b.etd ?? 9999);
+  });
+
+  if (enriched.length === 0) {
+    rowsEl.innerHTML = `
+      <div class="empty-state">
+        <h2>No Departures` + (VIEW.view !== 'all' ? ' Match This View' : ' Loaded') + `</h2>
+        <p>` + (VIEW.view !== 'all'
+          ? '<a href="?view=all" style="color:var(--gold-bright); text-decoration:underline;">Switch to All Departures</a>'
+          : 'Press <strong style="color:var(--gold-bright)">E</strong> for Ops Entry to add flights.') + `</p>
+      </div>`;
+    renderKPIs();
+    return;
+  }
+
+  rowsEl.innerHTML = enriched.map(({ f, status, timeToCutoff, timeToEtd, etd, cutoff, isCanceled, isDeparted, variance }) => {
+    const urgency = urgencyClass(timeToCutoff, timeToEtd, status, f);
+    const op = operator(f.tail);
+    const opBadge = op ? '<span class="op-badge ' + (op === 'MAINLINE' ? 'mainline' : '') + '">' + op + '</span>' : '';
+    const pierBadge = f.pierSide
+      ? '<span class="pier-badge pier-' + f.pierSide + '" title="Pier ' + f.pierSide + '">' + f.pierSide + '</span>'
+      : '';
+
+    // === FLIGHT cell (with tail + reroute/delay below) ===
+    const rerouteHtml = f.rerouteNotes ? '<span class="reroute-inline">⟲ ' + esc(f.rerouteNotes) + '</span>' : '';
+    const delayHtml = f.delayReason ? '<span class="delay-reason-chip">⚠ ' + esc(f.delayReason) + '</span>' : '';
+    const flightCell =
+      '<div class="flight-cell">' +
+        '<div class="flight">' + esc(f.flight) + pierBadge + opBadge + '</div>' +
+        '<div class="tail-small">' + esc(f.tail || '—') + '</div>' +
+        rerouteHtml + delayHtml +
+      '</div>';
+
+    // === TIMER ===
+    let timerHTML;
+    if (isCanceled) {
+      timerHTML = '<div class="timer-cell"><div class="timer">—</div><div class="timer-label">Canceled</div></div>';
+    } else if (status === 'departed' || (timeToEtd != null && timeToEtd < -2)) {
+      timerHTML = '<div class="timer-cell"><div class="timer">' + fmtCountdown(timeToEtd) + '</div><div class="timer-label">Departed</div></div>';
+    } else if (timeToCutoff == null) {
+      timerHTML = '<div class="timer-cell"><div class="timer">—</div></div>';
+    } else if (timeToCutoff <= 0 && timeToEtd > -2) {
+      timerHTML = '<div class="timer-cell"><div class="timer">BAGS AT A/C</div><div class="timer-label">Critical · ' + fmtCountdown(timeToEtd) + ' to push</div></div>';
+    } else if (timeToCutoff <= settings.imminentWindow) {
+      timerHTML = '<div class="timer-cell"><div class="timer">' + fmtCountdown(timeToCutoff) + '</div><div class="timer-label">Final Pull</div></div>';
+    } else if (timeToCutoff <= settings.prepWindow) {
+      timerHTML = '<div class="timer-cell"><div class="timer">' + fmtCountdown(timeToCutoff) + '</div><div class="timer-label">Pull Bags</div></div>';
+    } else {
+      timerHTML = '<div class="timer-cell"><div class="timer">' + fmtCountdown(timeToCutoff) + '</div><div class="timer-label">Cutoff In</div></div>';
+    }
+
+    // === STATUS CELL ===
+    let statusHTML;
+    if (isCanceled) {
+      statusHTML = '<span class="status-pill pill-canceled">Canceled</span>';
+    } else if (status === 'departed') {
+      statusHTML = '<span class="status-pill pill-departed">Departed</span>';
+    } else if (status === 'diverted') {
+      statusHTML = '<span class="status-pill pill-diverted">Diverted</span>';
+    } else if (status === 'boarding') {
+      statusHTML = '<div class="cutoff-time">' + fmtTime(cutoff) + '</div><span class="status-pill pill-boarding">Boarding</span>';
+    } else {
+      let pill = '';
+      if (status === 'early') pill = '<span class="status-pill pill-early">Early</span>';
+      else if (status === 'delayed') pill = '<span class="status-pill pill-delayed">Delayed</span>';
+      else pill = '<span class="status-pill pill-ontime">On Time</span>';
+      const cutoffText = '<div class="cutoff-time">' + fmtTime(cutoff) + '</div>';
+      const newEtdNote = (f.eta && f.eta !== f.sched)
+        ? '<div class="new-etd-note">New ETD ' + esc(f.eta) + '</div>'
+        : '';
+      statusHTML = cutoffText + pill + newEtdNote;
+    }
+
+    // === CART OUT / VARIANCE ===
+    let cartoutHTML;
+    if (f.cartOutActual && variance != null) {
+      const vClass = variance >= 0 ? 'good' : (variance >= -5 ? 'warn' : 'bad');
+      const vText = (variance >= 0 ? '+' : '') + variance + 'm';
+      cartoutHTML = '<div class="cartout-cell">' +
+        '<div class="cartout-time">' + esc(f.cartOutActual) + '</div>' +
+        '<span class="variance ' + vClass + '">' + vText + '</span>' +
+      '</div>';
+    } else if (f.cartOutActual) {
+      cartoutHTML = '<div class="cartout-cell"><div class="cartout-time">' + esc(f.cartOutActual) + '</div></div>';
+    } else {
+      cartoutHTML = '<div class="cartout-cell"><div class="cartout-time empty">— not yet —</div></div>';
+    }
+
+    // === GATE w/ change badge ===
+    const gateChangeBadge = f.prevGate
+      ? '<span class="gate-change-badge">⚡ Gate Chg from G' + esc(f.prevGate) + '</span>'
+      : '';
+    const gateHTML = '<div class="gate-cell"><div class="gate">' + esc(f.gate || '—') + '</div>' + gateChangeBadge + '</div>';
+
+    // === CREW (Bagroom / Exit Scan / Delivery / Lead) ===
+    const bagPullText = f.bagroomAgent ? '<span class="crew-value">' + esc(f.bagroomAgent) + '</span>' : '<span class="crew-value empty">—</span>';
+    const exitScanText = f.exitScanAgent ? '<span class="crew-value">' + esc(f.exitScanAgent) + '</span>' : '<span class="crew-value empty">—</span>';
+    const deliveryText = f.deliveryAgent ? '<span class="crew-value">' + esc(f.deliveryAgent) + '</span>' : '<span class="crew-value empty">—</span>';
+    const leadText = f.teamLead ? '<span class="crew-value" style="color:var(--gold-bright);">' + esc(f.teamLead) + '</span>' : '<span class="crew-value empty">—</span>';
+    const crewHTML = '<div class="crew-cell">' +
+      '<div class="crew-line"><span class="crew-label">Pull</span>' + bagPullText + '</div>' +
+      '<div class="crew-line"><span class="crew-label">Scan</span>' + exitScanText + '</div>' +
+      '<div class="crew-line"><span class="crew-label">Run</span>' + deliveryText + '</div>' +
+      '<div class="crew-line"><span class="crew-label">Lead</span>' + leadText + '</div>' +
+    '</div>';
+
+    // === CARTS w/ missing badge + WORKFLOW BUTTONS + QUICK ACTIONS ===
+    const missingBadge = (+f.missingBags > 0)
+      ? '<span class="missing-bags-badge">⚠ ' + f.missingBags + ' MISSING</span>'
+      : '';
+    const workflowHTML = statusButtonsHTML(f, timeToEtd);
+    const quickHTML = quickActionsHTML(f);
+    const cartsHTML = '<div class="carts-cell">' +
+      '<div class="carts">' + esc(f.carts || '—') + '</div>' +
+      missingBadge +
+      workflowHTML +
+      quickHTML +
+    '</div>';
+
+    // === LEAD MOBILE CARD (alternate render path when in ?view=lead mode) ===
+    const lcTimerClass = urgency === 'r-critical' ? 'urgent' : (urgency === 'r-amber' || urgency === 'r-imminent' ? 'amber' : '');
+    let lcTimerText = '—';
+    let lcTimerLabel = '';
+    if (isCanceled) { lcTimerText = 'CXL'; lcTimerLabel = ''; }
+    else if (f.status === 'complete') { lcTimerText = '✓ DONE'; lcTimerLabel = ''; }
+    else if (timeToEtd != null && timeToEtd < -2) { lcTimerText = 'GONE'; lcTimerLabel = ''; }
+    else if (timeToCutoff != null && timeToCutoff <= 0 && timeToEtd > -2) { lcTimerText = 'BAGS NOW'; lcTimerLabel = '(' + fmtCountdown(timeToEtd) + ' to push)'; }
+    else if (timeToCutoff != null) { lcTimerText = fmtCountdown(timeToCutoff); lcTimerLabel = 'to cutoff'; }
+    const lcStatusPill = (f.status && STATUS_LABELS[f.status])
+      ? '<span class="workflow-pill wf-' + f.status + '">' + STATUS_LABELS[f.status] + '</span>'
+      : '<span class="workflow-pill wf-assigned" style="opacity:0.5">PENDING</span>';
+    const lcStats =
+      '<span class="lc-timer ' + lcTimerClass + '">' + lcTimerText + (lcTimerLabel ? ' <span style="font-size:0.7em;opacity:0.7">' + lcTimerLabel + '</span>' : '') + '</span>' +
+      '<span><span class="label">Gate</span> <strong>' + esc(f.gate || '—') + '</strong></span>' +
+      '<span><span class="label">ETD</span> <strong>' + esc(f.eta || f.sched || '—') + '</strong></span>' +
+      '<span><span class="label">Carts</span> <strong>' + esc(f.carts || '—') + '</strong></span>' +
+      '<span><span class="label">Pull</span> <strong>' + esc(f.bagroomAgent || '—') + '</strong></span>' +
+      lcStatusPill;
+    const lcReroute = f.rerouteNotes ? '<div class="lc-rerouting">⟲ ' + esc(f.rerouteNotes) + '</div>' : '';
+    const lcMissing = (+f.missingBags > 0) ? '<div class="lc-missing">⚠ ' + f.missingBags + ' BAG' + (f.missingBags > 1 ? 'S' : '') + ' MISSING</div>' : '';
+    const leadCard =
+      '<div class="lead-card">' +
+        '<div class="lc-flight">' + esc(f.flight) + '<span class="lc-dest">→ ' + esc(f.dest || '?') + '</span>' +
+          '<span class="lc-tail">' + esc(f.tail || '') + '</span>' +
+        '</div>' +
+        '<div class="lc-pier">' + pierBadge + '</div>' +
+        '<div class="lc-stats">' + lcStats + '</div>' +
+        lcReroute + lcMissing +
+        '<div class="lc-buttons">' + statusButtonsHTML(f, timeToEtd).replace('<div class="status-buttons">','').replace('</div>','') + '</div>' +
+        quickActionsHTML(f) +
+      '</div>';
+
+    const gateChangeRow = f.prevGate ? ' has-gate-change' : '';
+
+    return '<div class="row ' + urgency + gateChangeRow + '" data-id="' + f.id + '" onclick="openEdit(\'' + f.id + '\')">' +
+      flightCell +
+      '<div class="sched">' + esc(f.sched || '—') + '</div>' +
+      '<div class="status-cell">' + statusHTML + '</div>' +
+      timerHTML +
+      cartoutHTML +
+      gateHTML +
+      '<div class="dest">' + esc(f.dest || '—') + '</div>' +
+      crewHTML +
+      cartsHTML +
+      leadCard +
+    '</div>';
+  }).join('');
+
+  // Critical-bag alerts
+  enriched.forEach(({ f, timeToCutoff, timeToEtd, isCanceled }) => {
+    if (isCanceled) return;
+    const key = f.id + ':cutoff';
+    if (timeToCutoff != null && timeToCutoff <= 0 && timeToEtd > -1) {
+      if (!alerted.has(key) && (Date.now() - bootTime) > 2500) {
+        alerted.add(key);
+        if (settings.showToast) showToast(f);
+        chime();
+      }
+    }
+    if (timeToEtd != null && timeToEtd < -3) alerted.delete(key);
+  });
+
+  renderKPIs();
+}
+
+function esc(s) {
+  return String(s == null ? '' : s).replace(/[&<>"']/g, c =>
+    ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+/* ----- TOAST + CHIME ----- */
+function showToast(f) {
+  const t = document.getElementById('toast');
+  t.innerHTML = '⚠ ' + esc(f.flight) + ' · BAGS AT A/C NOW<br><span class="sub">To ' + esc(f.dest || '???') +
+    ' · Gate ' + esc(f.gate || '?') + (f.carts ? ' · ' + esc(f.carts) + ' Carts' : '') + '</span>';
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 7000);
+}
+let audioCtx = null;
+function chime() {
+  try {
+    audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+    const t0 = audioCtx.currentTime;
+    [659, 880, 1175].forEach((freq, i) => {
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.type = 'sine';
+      osc.frequency.value = freq;
+      const start = t0 + i * 0.18;
+      gain.gain.setValueAtTime(0.0001, start);
+      gain.gain.exponentialRampToValueAtTime(0.3, start + 0.02);
+      gain.gain.exponentialRampToValueAtTime(0.0001, start + 0.4);
+      osc.connect(gain).connect(audioCtx.destination);
+      osc.start(start);
+      osc.stop(start + 0.42);
+    });
+  } catch (e) {}
+}
+
+/* ----- DRAWER / OPS ENTRY ----- */
+function openDrawer() {
+  document.getElementById('drawer').classList.add('show');
+  document.getElementById('drawer-backdrop').classList.add('show');
+  renderFlightList();
+}
+function closeDrawer() {
+  document.getElementById('drawer').classList.remove('show');
+  document.getElementById('drawer-backdrop').classList.remove('show');
+  resetForm();
+}
+function switchTab(name) {
+  document.querySelectorAll('.drawer-tab').forEach(t => t.classList.toggle('active', t.dataset.tab === name));
+  document.querySelectorAll('#drawer .tab-panel').forEach(p => p.classList.toggle('active', p.dataset.panel === name));
+  if (name === 'list') renderFlightList();
+  if (name === 'settings') loadSettingsToForm();
+  if (name === 'leadlinks') renderLeadLinks();
+  if (name === 'reports') renderReportStats();
+}
+function resetForm() {
+  editingId = null;
+  ['f-flight','f-tail','f-sched','f-eta','f-gate','f-dest','f-carts',
+   'f-bagroom','f-exitscan','f-delivery','f-lead','f-cartout','f-gatearr','f-reroute']
+    .forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+  document.getElementById('f-status').value = '';
+  document.getElementById('f-delay').value = '';
+  document.getElementById('f-missing').value = '0';
+  document.getElementById('f-pier').value = '';
+  document.getElementById('edit-mode-banner').style.display = 'none';
+  document.getElementById('f-delete').style.display = 'none';
+}
+function openEdit(id) {
+  const f = flights.find(x => x.id === id);
+  if (!f) return;
+  editingId = id;
+  switchTab('add');
+  openDrawer();
+  document.getElementById('f-flight').value = f.flight || '';
+  document.getElementById('f-tail').value = f.tail || '';
+  document.getElementById('f-sched').value = f.sched || '';
+  document.getElementById('f-eta').value = f.eta || '';
+  document.getElementById('f-gate').value = f.gate || '';
+  document.getElementById('f-dest').value = f.dest || '';
+  document.getElementById('f-carts').value = f.carts || '';
+  document.getElementById('f-bagroom').value = f.bagroomAgent || '';
+  document.getElementById('f-exitscan').value = f.exitScanAgent || '';
+  document.getElementById('f-delivery').value = f.deliveryAgent || '';
+  document.getElementById('f-lead').value = f.teamLead || '';
+  document.getElementById('f-pier').value = f.pierSide || '';
+  document.getElementById('f-cartout').value = f.cartOutActual || '';
+  document.getElementById('f-gatearr').value = f.gateArrivalTime || '';
+  document.getElementById('f-reroute').value = f.rerouteNotes || '';
+  document.getElementById('f-status').value = f.status || '';
+  document.getElementById('f-delay').value = f.delayReason || '';
+  document.getElementById('f-missing').value = f.missingBags || 0;
+  document.getElementById('edit-mode-banner').style.display = 'block';
+  document.getElementById('edit-mode-flight').textContent = f.flight;
+  document.getElementById('f-delete').style.display = 'inline-block';
+}
+function pierFromGate(g) {
+  const n = parseInt(g, 10);
+  if (n >= 2 && n <= 4) return 'A';
+  if (n >= 5 && n <= 7) return 'B';
+  if (n >= 8 && n <= 9) return 'C';
+  if (n >= 10 && n <= 12) return 'D';
+  return '';
+}
+function saveForm() {
+  const gate = document.getElementById('f-gate').value.trim();
+  let pier = document.getElementById('f-pier').value.trim().toUpperCase();
+  if (!pier && gate) pier = pierFromGate(gate);
+  let lead = document.getElementById('f-lead').value.trim().toUpperCase();
+  if (!lead && pier) lead = PIER_TO_LEAD[pier] || '';
+  const data = {
+    flight: document.getElementById('f-flight').value.trim().toUpperCase(),
+    tail: document.getElementById('f-tail').value.trim().toUpperCase(),
+    sched: document.getElementById('f-sched').value.trim(),
+    eta: document.getElementById('f-eta').value.trim(),
+    gate: gate,
+    pierSide: pier,
+    dest: document.getElementById('f-dest').value.trim().toUpperCase(),
+    carts: document.getElementById('f-carts').value.trim(),
+    bagroomAgent: document.getElementById('f-bagroom').value.trim().toUpperCase(),
+    exitScanAgent: document.getElementById('f-exitscan').value.trim().toUpperCase(),
+    deliveryAgent: document.getElementById('f-delivery').value.trim().toUpperCase(),
+    teamLead: lead,
+    cartOutActual: document.getElementById('f-cartout').value.trim(),
+    gateArrivalTime: document.getElementById('f-gatearr').value.trim(),
+    rerouteNotes: document.getElementById('f-reroute').value.trim(),
+    status: document.getElementById('f-status').value,
+    delayReason: document.getElementById('f-delay').value,
+    missingBags: +document.getElementById('f-missing').value || 0,
+  };
+  if (!data.flight) { alert('Flight number is required'); return; }
+  if (!data.sched && !data.eta && data.status !== 'canceled') {
+    alert('ETD is required (unless flight is canceled)');
+    return;
+  }
+  if (editingId) {
+    const f = flights.find(x => x.id === editingId);
+    if (f.gate && data.gate && f.gate !== data.gate) {
+      data.prevGate = f.gate;
+      data.gateChangedAt = new Date().toISOString();
+    } else {
+      data.prevGate = f.prevGate || '';
+      data.gateChangedAt = f.gateChangedAt || '';
+    }
+    data.statusHistory = f.statusHistory || [];
+    Object.assign(f, data);
+  } else {
+    data.prevGate = '';
+    data.gateChangedAt = '';
+    data.statusHistory = [];
+    flights.push({ ...data, id: 'f' + Date.now() });
+  }
+  saveFlights();
+  resetForm();
+  render();
+  switchTab('list');
+}
+function deleteFlight() {
+  if (!editingId) return;
+  if (!confirm('Remove this flight from the board?')) return;
+  flights = flights.filter(x => x.id !== editingId);
+  saveFlights();
+  resetForm();
+  render();
+}
+function renderFlightList() {
+  const wrap = document.getElementById('flight-list');
+  if (!flights.length) {
+    wrap.innerHTML = '<div style="padding:20px; color:var(--text-dim); text-align:center;">No flights yet. Add one or use Bulk Paste.</div>';
+    return;
+  }
+  const sorted = [...flights].sort((a, b) => {
+    const at = parseTimeToMinutes(a.eta || a.sched) ?? 9999;
+    const bt = parseTimeToMinutes(b.eta || b.sched) ?? 9999;
+    return at - bt;
+  });
+  wrap.innerHTML = sorted.map(f => `
+    <div class="flight-row">
+      <span class="fl-num">${esc(f.flight)}</span>
+      <span class="fl-sched">${esc(f.sched || '—')}</span>
+      <span class="fl-eta">${esc(f.eta || '')}</span>
+      <span class="fl-dest">${esc(f.dest || '—')}${f.gate ? ' · G' + esc(f.gate) : ''}</span>
+      <div class="fl-actions">
+        <button class="mini-btn" onclick="openEdit('${f.id}')">Edit</button>
+        <button class="mini-btn del" onclick="quickDelete('${f.id}')">Del</button>
+      </div>
+    </div>
+  `).join('');
+}
+function quickDelete(id) {
+  if (!confirm('Delete this flight?')) return;
+  flights = flights.filter(x => x.id !== id);
+  saveFlights(); renderFlightList(); render();
+}
+
+/* ----- BULK PASTE ----- */
+/* ----- DELTA LIVE STATUS MAP ----- */
+const DELTA_STATUS_MAP = {
+  'complete':        'complete',
+  'in flight':       'complete',
+  'in-flight':       'complete',
+  'inflight':        'complete',
+  'handoff':         'deliveredAtGate',
+  'boarding':        'deliveredAtGate',
+  'at gate':         'cartOut',
+  'atgate':          'cartOut',
+  'routine':         '',
+  'scheduled':       '',
+  'on time':         '',
+  'canceled':        'canceled',
+  'cancelled':       'canceled',
+  'diverted':        'diverted',
+};
+
+const PASTE_HEADER_WORDS = new Set([
+  'arln','airline','select','flight','gate','skddept','sched','scheduled','est','act',
+  'flt','status','flt.status','flt_status','eqp','equip','equipment','ship','booked',
+  'passengers','pax','arrival','departure','dest','arr','nbr','number','dept',
+  'flight#','flight#.','fltnbr',
+]);
+
+/* Normalize non-standard whitespace (non-breaking spaces, zero-width, etc.) to plain spaces */
+function normalizeWS(s) {
+  return s.replace(/[\u00A0\u202F\u2003\u2002\u2001\u2000\u2007\u200A\u200B\u205F\u3000\uFEFF\u00AD\u180E]/g, ' ');
+}
+
+/* Smart line tokenizer — handles ALL Android/mobile clipboard formats:
+   - Tab-separated    "DL\tATL\t1242\t03\t6:15 AM"
+   - Multi-space      "DL    ATL    1242    03    6:15 AM"
+   - Single-space     "DL ATL 1242 03 6:15 AM 6:10 AM Complete"
+   - Non-breaking (\u00A0) spaces (from HTML &nbsp; copy)
+   - Partial times    "6:10" + "AM" on separate tokens after line wrap */
+function tokenizeLine(line) {
+  const s = normalizeWS(line).trim();
+  if (!s) return [];
+
+  // 1. Tab-separated (desktop browsers — most reliable)
+  const byTab = s.split('\t').map(t => t.trim()).filter(Boolean);
+  if (byTab.length >= 4) return byTab;
+
+  // 2. Single-space split + time reassembly — BEFORE multi-space
+  //    Non-breaking spaces normalize to regular spaces making everything single-spaced.
+  //    Re-merge "H:MM" + "AM/PM" adjacent pairs → "H:MM AM"
+  const raw = s.split(/\s+/).filter(Boolean);
+  const merged = [];
+  for (let i = 0; i < raw.length; i++) {
+    if (
+      i + 1 < raw.length &&
+      /^\d{1,2}:\d{2}$/.test(raw[i]) &&
+      /^[APap][Mm]$/i.test(raw[i + 1])
+    ) {
+      merged.push(raw[i] + ' ' + raw[i + 1].toUpperCase());
+      i++;
+    } else {
+      merged.push(raw[i]);
+    }
+  }
+  if (merged.length >= 4) return merged;
+
+  // 3. Multi-space fallback
+  const byMulti = s.split(/\s{2,}/).map(t => t.trim()).filter(Boolean);
+  if (byMulti.length >= 4) return byMulti;
+
+  return merged.length > 0 ? merged : byTab;
+}
+
+// Matches any header/column-label line from the Delta departures table
+const HEADER_LINE_RE = /^(arln|arr\.?\s*stn|airline|select\s*flight|flight\s*#?\.?|gate|sched(uled)?|skd\.?dept?|est\.?\s*dept?|act\.?\s*dept?|flt\.?\s*status|flt|eqp|equip(ment)?|ship|booked(\s*pass(engers?)?)?|pax|pass(engers?)?|arrival|departure|dest|nbr|number|dept?|fltnbr|estimated|actual|status|type|tail|carts?|passengers?)$/i;
+
+/* Detect and reassemble "vertical" clipboard format — Android often copies HTML tables
+   one cell per line. Groups values into flights by detecting airline-code markers. */
+function detectAndReassembleVertical(text) {
+  const rawLines = text.split(/\r?\n/).map(l => normalizeWS(l).trim()).filter(Boolean);
+  if (rawLines.length < 4) return null;
+
+  // Vertical signal: most lines are very short (1-2 tokens, ≤ 15 chars)
+  const shortCount = rawLines.filter(l => l.split(/\s+/).length <= 2 && l.length <= 15).length;
+  if (shortCount / rawLines.length < 0.55) return null;
+
+  // Strip header column-label lines using both the header regex and the keyword set
+  const dataLines = rawLines.filter(l =>
+    !HEADER_LINE_RE.test(l.trim()) &&
+    !PASTE_HEADER_WORDS.has(l.toLowerCase().replace(/[\s._]/g, ''))
+  );
+  if (dataLines.length < 4) return null;
+
+  // Group: new flight starts on a solo 2-3 letter airline code (e.g. "DL")
+  const rows = [];
+  let cur = [];
+  for (const line of dataLines) {
+    const isSoloAirline = /^[A-Z]{2,3}$/i.test(line);
+    if (isSoloAirline && cur.length >= 4) {
+      // Safety check: only push if first item also looks like an airline code
+      if (/^[A-Z]{2,3}$/i.test(cur[0])) rows.push(cur.join('\t'));
+      cur = [line];
+    } else if (isSoloAirline && cur.length === 0) {
+      cur = [line];
+    } else {
+      cur.push(line);
+    }
+  }
+  if (cur.length >= 4 && /^[A-Z]{2,3}$/i.test(cur[0])) rows.push(cur.join('\t'));
+
+  return rows.length > 0 ? rows.join('\n') : null;
+}
+
+function isDeltaLiveFormat(p) {
+  return (
+    p.length >= 4 &&
+    /^[A-Z0-9]{2,3}$/i.test(p[0]) &&
+    /^[A-Z]{3}$/i.test(p[1]) &&
+    /^\d{1,5}$/.test(p[2]) &&
+    /^\d{1,2}$/.test(p[3])
+  );
+}
+
+function bulkParse(text) {
+  const out = [];
+
+  // Pre-process: detect and reassemble vertical (Android one-per-line) format
+  const reassembled = detectAndReassembleVertical(text);
+  const workText = reassembled || text;
+
+  const lines = workText.split(/\r?\n/);
+  let detectedFormat = null;
+
+  lines.forEach(line => {
+    if (!line.trim()) return;
+
+    const p = tokenizeLine(line);
+    if (p.length < 2) return;
+
+    // Skip common header rows
+    const p0lower = p[0].toLowerCase().replace(/[.\s_]/g, '');
+    if (PASTE_HEADER_WORDS.has(p0lower)) return;
+    if (/^(select\s*flight|flt\s*nbr|booked\s*pass|skddept|arr\s*stn)/i.test(p[0])) return;
+
+    let flight, tail, sched, eta, gate, dest, status, equipment, paxCount;
+    let carts = '', bagroomAgent = '', exitScanAgent = '', deliveryAgent = '';
+
+    // ====== DELTA LIVE FORMAT ======
+    if (isDeltaLiveFormat(p) || detectedFormat === 'delta') {
+      detectedFormat = 'delta';
+      const arln = p[0].toUpperCase();
+      dest = p[1].toUpperCase();
+      const flightNum = p[2];
+      gate = String(+p[3] || 0).padStart(2, '0');
+      if (gate === '00') gate = '';
+
+      sched = p[4] || '';
+
+      let idx = 5;
+      eta = '';
+      // Est Dept (optional time field)
+      if (idx < p.length && /^\d{1,2}:\d{2}/.test(p[idx])) {
+        const cand = p[idx];
+        // Only store as "new ETD" if different from sched
+        if (normalizeWS(cand).trim() !== normalizeWS(sched).trim()) eta = cand;
+        idx++;
+      }
+      // Act Dept (skip — historical)
+      if (idx < p.length && /^\d{1,2}:\d{2}/.test(p[idx])) idx++;
+
+      // Flt Status
+      const rawStatus = (p[idx] || '').toLowerCase().replace(/\s+/g, ' ').trim();
+      const mappedStatus = DELTA_STATUS_MAP[rawStatus];
+      status = (mappedStatus !== undefined) ? mappedStatus : '';
+      if (rawStatus && Object.prototype.hasOwnProperty.call(DELTA_STATUS_MAP, rawStatus)) idx++;
+
+      // Equipment (3-4 digit type code, or "UNK")
+      equipment = p[idx] || '';
+      if (/^\d{3,4}$/.test(equipment) || /^[A-Z0-9]{3,4}$/i.test(equipment)) idx++;
+      else equipment = '';
+
+      // Ship number
+      tail = p[idx] || '';
+      if (/^\d{5,8}$/.test(tail)) idx++;
+      else tail = '';
+
+      // Pax
+      paxCount = p[idx] ? (+p[idx] || 0) : 0;
+
+      flight = arln + ' ' + flightNum;
+
+      const pier = pierFromGate(gate);
+      const lead = PIER_TO_LEAD[pier] || '';
+      const cartGuess = (equipment === '321' || equipment === '320' || equipment === '738' || equipment === '739') ? '3' : (equipment && equipment !== 'UNK' ? '2' : '');
+
+      // Pre-populate statusHistory based on live status
+      const hist = [];
+      if (['complete', 'deliveredAtGate', 'cartOut'].includes(status))
+        hist.push({ status: 'assigned', at: new Date().toISOString(), by: '', empId: '' });
+      if (['complete', 'deliveredAtGate'].includes(status)) {
+        hist.push({ status: 'cartOut', at: new Date().toISOString(), by: '', empId: '' });
+        hist.push({ status: 'deliveredAtGate', at: new Date().toISOString(), by: '', empId: '' });
+      }
+      if (status === 'complete')
+        hist.push({ status: 'complete', at: new Date().toISOString(), by: '', empId: '' });
+      if (status === 'cartOut')
+        hist.push({ status: 'cartOut', at: new Date().toISOString(), by: '', empId: '' });
+
+      out.push({
+        flight, tail, sched, eta,
+        gate, pierSide: pier, dest,
+        carts: cartGuess,
+        bagroomAgent: '', exitScanAgent: '', deliveryAgent: '', teamLead: lead,
+        cartOutActual: '', gateArrivalTime: '',
+        delayReason: '', missingBags: 0,
+        rerouteNotes: '', prevGate: '', gateChangedAt: '',
+        status, statusHistory: hist,
+        equipment, paxCount: paxCount || 0,
+        id: 'f' + Date.now() + '_' + Math.random().toString(36).slice(2, 7)
+      });
+
+    // ====== CUSTOM FORMAT (manual entry) ======
+    } else {
+      detectedFormat = 'custom';
+
+      // Merge "DL" + "1242" if split as two tokens
+      let pp = [...p];
+      if (/^[A-Z0-9]{2,3}$/i.test(pp[0]) && /^\d{3,5}$/.test(pp[1])) {
+        pp = [pp[0].toUpperCase() + ' ' + pp[1], ...pp.slice(2)];
+      }
+      pp[0] = pp[0].toUpperCase();
+
+      const [fl, t, sc, et, ga, de, ca, bg, es, dl, ld] = pp;
+      flight = fl;
+      tail = (t || '').toUpperCase();
+      sched = sc || '';
+      eta = et || '';
+      gate = ga || '';
+      dest = (de || '').toUpperCase();
+      carts = ca || '';
+      bagroomAgent = (bg || '').toUpperCase();
+      exitScanAgent = (es || '').toUpperCase();
+      deliveryAgent = (dl || '').toUpperCase();
+      const explicitLead = (ld || '').toUpperCase();
+      status = '';
+      equipment = '';
+      paxCount = 0;
+
+      const pier = pierFromGate(gate);
+      const lead = explicitLead || PIER_TO_LEAD[pier] || '';
+
+      out.push({
+        flight, tail, sched, eta,
+        gate, pierSide: pier, dest,
+        carts, bagroomAgent, exitScanAgent, deliveryAgent, teamLead: lead,
+        cartOutActual: '', gateArrivalTime: '',
+        delayReason: '', missingBags: 0,
+        rerouteNotes: '', prevGate: '', gateChangedAt: '',
+        status, statusHistory: [], equipment, paxCount,
+        id: 'f' + Date.now() + '_' + Math.random().toString(36).slice(2, 7)
+      });
+    }
+  });
+
+  return out;
+}
+
+function bulkParse(text) {
+  const out = [];
+  const lines = text.split(/\r?\n/);
+  let detectedFormat = null; // 'delta' or 'custom' — set on first data row
+
+  lines.forEach(line => {
+    if (!line.trim()) return;
+    const raw = line.trim();
+
+    // Split on tabs first; fall back to 2+ spaces
+    let p = raw.split('\t').map(s => s.trim()).filter(Boolean);
+    if (p.length <= 2) p = raw.split(/\s{2,}/).map(s => s.trim()).filter(Boolean);
+    if (p.length < 2) return;
+
+    // Skip common header rows
+    if (/^(arln|airline|flight\s*#|flight\s*nbr|select|flt\s*status)/i.test(p[0])) return;
+    if (/^(skddept|sched|etd|est dept)/i.test(p[0])) return;
+
+    let flight, tail, sched, eta, gate, dest, status, equipment, paxCount;
+    let carts = '', bagroomAgent = '', exitScanAgent = '', deliveryAgent = '';
+
+    // ====== DELTA LIVE FORMAT (auto-detected) ======
+    // DL | ATL | 1242 | 03 | 06:15 AM | [06:10 AM] | [06:05 AM] | [Status] | [Eqp] | [Ship] | [Pax]
+    if (isDeltaLiveFormat(p) || detectedFormat === 'delta') {
+      detectedFormat = 'delta';
+
+      const arln = p[0].toUpperCase();
+      dest = p[1].toUpperCase();
+      const flightNum = p[2];
+      gate = p[3];               // raw gate like "03" or "3"
+      sched = parseTimeField(p[4]);
+
+      let idx = 5;
+      eta = '';
+      // Est Dept (new ETD) — optional, looks like a time
+      if (idx < p.length && /^\d{1,2}:\d{2}/.test(p[idx])) {
+        const candidate = parseTimeField(p[idx]);
+        if (candidate !== sched) eta = candidate;
+        idx++;
+      }
+      // Act Dept — skip it (historical, we don't need it)
+      if (idx < p.length && /^\d{1,2}:\d{2}/.test(p[idx])) idx++;
+
+      // Status (Flt Status column)
+      const rawStatus = (p[idx] || '').toLowerCase().replace(/\s+/g, ' ').trim();
+      const mappedStatus = DELTA_STATUS_MAP[rawStatus];
+      status = (mappedStatus !== undefined) ? mappedStatus : '';
+      if (rawStatus && DELTA_STATUS_MAP.hasOwnProperty(rawStatus)) idx++;
+
+      // Equipment (Eqp) — 3-4 digit aircraft code or "UNK"
+      equipment = p[idx] || '';
+      if (/^\d{3,4}$/.test(equipment) || /^[A-Z0-9]{3,4}$/i.test(equipment)) idx++;
+      else equipment = '';
+
+      // Ship number (tail/serial) — typically 6 digits like "003274"
+      tail = p[idx] || '';
+      if (/^\d{5,8}$/.test(tail)) idx++;
+      else tail = '';
+
+      // Pax count
+      paxCount = p[idx] ? (+p[idx] || 0) : 0;
+
+      flight = arln + ' ' + flightNum;
+
+    // ====== CUSTOM FORMAT (backwards compat) ======
+    // DL 1242 | N274DL | ETD | NEW_ETD | GATE | DEST | CARTS | BAGROOM | EXITSCAN | DELIVERY | LEAD
+    } else {
+      detectedFormat = 'custom';
+
+      // Try to merge airline + flight number if they're separate (e.g. "DL" + "1242")
+      if (/^[A-Z0-9]{2,3}$/i.test(p[0]) && /^\d{3,5}$/.test(p[1])) {
+        p = [p[0] + ' ' + p[1], ...p.slice(2)];
+      }
+      p[0] = p[0].toUpperCase();
+
+      const [fl, t, sc, et, ga, de, ca, bg, es, dl, ld] = p;
+      flight = fl;
+      tail = (t || '').toUpperCase();
+      sched = sc || '';
+      eta = et || '';
+      gate = ga || '';
+      dest = (de || '').toUpperCase();
+      carts = ca || '';
+      bagroomAgent = (bg || '').toUpperCase();
+      exitScanAgent = (es || '').toUpperCase();
+      deliveryAgent = (dl || '').toUpperCase();
+      const explicitLead = (ld || '').toUpperCase();
+      status = '';
+      equipment = '';
+      paxCount = 0;
+      tail = tail;
+      const pier = pierFromGate(gate);
+      const lead = explicitLead || PIER_TO_LEAD[pier] || '';
+      out.push({
+        flight, tail, sched, eta, gate, pierSide: pier, dest,
+        carts, bagroomAgent, exitScanAgent, deliveryAgent, teamLead: lead,
+        cartOutActual: '', gateArrivalTime: '',
+        delayReason: '', missingBags: 0,
+        rerouteNotes: '', prevGate: '', gateChangedAt: '',
+        status, statusHistory: [], equipment, paxCount,
+        id: 'f' + Date.now() + '_' + Math.random().toString(36).slice(2,7)
+      });
+      return; // skip common tail below
+    }
+
+    // === COMMON TAIL for Delta Live format ===
+    // Normalize gate: strip leading zeros but keep 2-digit format ("03" → "03", "3" → "03")
+    gate = String(+gate || 0).padStart(2, '0');
+    if (gate === '00') gate = '';
+
+    const pier = pierFromGate(gate);
+    const lead = PIER_TO_LEAD[pier] || '';
+
+    // Estimate carts from equipment (if no crew info from paste)
+    const cartGuess = (equipment === '321' || equipment === '320' || equipment === '738' || equipment === '739')
+      ? '3' : (equipment && equipment !== 'UNK' ? '2' : '');
+
+    // Build status history if we know the live status
+    const hist = [];
+    if (status === 'complete' || status === 'deliveredAtGate' || status === 'cartOut') {
+      hist.push({ status: 'assigned', at: new Date().toISOString(), by: '', empId: '' });
+    }
+    if (status === 'complete' || status === 'deliveredAtGate') {
+      hist.push({ status: 'cartOut', at: new Date().toISOString(), by: '', empId: '' });
+      hist.push({ status: 'deliveredAtGate', at: new Date().toISOString(), by: '', empId: '' });
+    }
+    if (status === 'complete') {
+      hist.push({ status: 'complete', at: new Date().toISOString(), by: '', empId: '' });
+    }
+    if (status === 'cartOut') {
+      hist.push({ status: 'cartOut', at: new Date().toISOString(), by: '', empId: '' });
+    }
+
+    out.push({
+      flight, tail, sched, eta,
+      gate, pierSide: pier, dest,
+      carts: cartGuess,
+      bagroomAgent: '', exitScanAgent: '', deliveryAgent: '', teamLead: lead,
+      cartOutActual: '', gateArrivalTime: '',
+      delayReason: '', missingBags: 0,
+      rerouteNotes: '', prevGate: '', gateChangedAt: '',
+      status, statusHistory: hist,
+      equipment, paxCount: +paxCount || 0,
+      id: 'f' + Date.now() + '_' + Math.random().toString(36).slice(2,7)
+    });
+  });
+  return out;
+}
+function pasteAppend() {
+  const text = document.getElementById('paste-text').value;
+  const parsed = bulkParse(text);
+  if (!parsed.length) { alert('Could not parse any rows.'); return; }
+  if (!confirm('Add ' + parsed.length + ' flights to the board?')) return;
+  flights = flights.concat(parsed);
+  saveFlights();
+  document.getElementById('paste-text').value = '';
+  render(); switchTab('list');
+}
+function pasteReplace() {
+  const text = document.getElementById('paste-text').value;
+  const parsed = bulkParse(text);
+  if (!parsed.length) { alert('Could not parse any rows.'); return; }
+  if (!confirm('Replace ALL current flights with ' + parsed.length + ' new row(s)?')) return;
+  flights = parsed;
+  saveFlights();
+  document.getElementById('paste-text').value = '';
+  render(); switchTab('list');
+}
+
+/* ----- SETTINGS ----- */
+function loadSettingsToForm() {
+  document.getElementById('s-station').value = settings.station;
+  document.getElementById('s-cutoff').value = settings.cutoffBuffer;
+  document.getElementById('s-prep').value = settings.prepWindow;
+  document.getElementById('s-imminent').value = settings.imminentWindow;
+  document.getElementById('s-archive').value = settings.archiveAfter;
+  document.getElementById('s-otp-target').value = settings.otpTarget || 90;
+  const aw = document.getElementById('s-amberwarn'); if (aw) aw.value = settings.amberWarnMin || 60;
+  document.getElementById('s-toast').checked = !!settings.showToast;
+  document.getElementById('s-testtime').value = settings.testTime || '';
+  const fu = document.getElementById('s-feedurl'); if (fu) fu.value = settings.feedUrl || '';
+  const fi = document.getElementById('s-feedint'); if (fi) fi.value = (settings.feedInterval != null ? settings.feedInterval : 120);
+}
+function saveSettingsFromForm() {
+  settings.station = document.getElementById('s-station').value.trim().toUpperCase() || 'AUS';
+  settings.cutoffBuffer = Math.max(15, Math.min(120, +document.getElementById('s-cutoff').value || 45));
+  settings.prepWindow = Math.max(5, Math.min(60, +document.getElementById('s-prep').value || 15));
+  settings.imminentWindow = Math.max(1, Math.min(30, +document.getElementById('s-imminent').value || 5));
+  settings.archiveAfter = Math.max(5, Math.min(240, +document.getElementById('s-archive').value || 30));
+  settings.otpTarget = Math.max(50, Math.min(100, +document.getElementById('s-otp-target').value || 90));
+  const aw = document.getElementById('s-amberwarn');
+  if (aw) settings.amberWarnMin = Math.max(30, Math.min(180, +aw.value || 60));
+  settings.showToast = document.getElementById('s-toast').checked;
+  settings.testTime = document.getElementById('s-testtime').value.trim();
+  const fu = document.getElementById('s-feedurl'); if (fu) settings.feedUrl = fu.value.trim();
+  const fi = document.getElementById('s-feedint'); if (fi) settings.feedInterval = Math.max(0, Math.min(3600, +fi.value || 0));
+  saveSettings();
+  bootTime = Date.now();
+  startFeedPolling();
+  if (settings.feedUrl) fetchLiveFeed(true);
+  render();
+  alert('Settings saved.');
+}
+
+/* ----- LIVE DATA FEED (AeroAPI proxy) ----- */
+let feedTimer = null;
+
+function setFeedStatus(msg, isError) {
+  const el = document.getElementById('feed-status');
+  if (el) {
+    el.textContent = msg;
+    el.style.color = isError ? 'var(--orange)' : '';
+  }
+}
+
+function normFlightNum(s) {
+  return String(s || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+}
+
+async function fetchLiveFeed(manual) {
+  const url = (settings.feedUrl || '').trim();
+  if (!url) { setFeedStatus('Not configured'); return; }
+  setFeedStatus('Updating\u2026');
+  try {
+    const r = await fetch(url, { cache: 'no-store' });
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    const data = await r.json();
+    const list = Array.isArray(data) ? data : (data.scheduled_departures || data.flights || []);
+    if (!Array.isArray(list)) throw new Error('Unrecognized feed format');
+
+    let updated = 0, added = 0;
+    list.forEach(item => {
+      const rawNum = item.flight || item.ident_iata || item.ident || '';
+      const num = normFlightNum(rawNum).replace(/^DAL/, 'DL');
+      if (!num.startsWith('DL')) return;
+
+      // Times: prefer pre-converted local strings from the Worker (etd_*_local).
+      const sched = item.etd_sched_local || item.sched || '';
+      const est   = item.etd_est_local || item.etd_local || item.eta || '';
+      const gate  = String(item.gate || '').replace(/^G/i, '').trim();
+      const dest  = item.destination || item.dest || '';
+      const tail  = item.tail || item.registration || '';
+      const equip = item.equipment || item.aircraft_type || '';
+
+      let f = flights.find(x => normFlightNum(x.flight) === num);
+      if (!f) {
+        const pier = gate ? pierFromGate(gate) : '';
+        flights.push({
+          flight: 'DL ' + num.slice(2), tail: tail, sched: sched,
+          eta: (est && est !== sched) ? est : '',
+          gate: gate, prevGate: '', gateChangedAt: '', dest: dest, carts: '',
+          pierSide: pier || '', teamLead: (pier && PIER_TO_LEAD[pier]) || '',
+          bagroomAgent: '', exitScanAgent: '', deliveryAgent: '',
+          cartOutActual: '', gateArrivalTime: '', delayReason: '', missingBags: 0,
+          rerouteNotes: '', status: item.cancelled ? 'canceled' : '',
+          statusHistory: [], equipment: equip, paxCount: item.paxCount || 0,
+          id: 'f' + Date.now() + Math.random().toString(36).slice(2, 7)
+        });
+        added++;
+      } else {
+        // Update SCHEDULE fields only — never the team's workflow entries.
+        if (sched) f.sched = sched;
+        if (est && sched && est !== sched) { f.eta = est; }
+        else if (est && est === f.sched && f.eta && parseTimeToMinutes(f.eta) === parseTimeToMinutes(est)) { f.eta = ''; }
+        if (gate && gate !== f.gate) {
+          f.prevGate = f.gate;
+          f.gate = gate;
+          f.gateChangedAt = new Date().toISOString();
+          const np = pierFromGate(gate);
+          if (np) {
+            f.pierSide = np;
+            if (!f.bagroomAgent && !f.cartOutActual) f.teamLead = PIER_TO_LEAD[np] || f.teamLead;
+          }
+        }
+        if (tail) f.tail = tail;
+        if (dest && !f.dest) f.dest = dest;
+        if (equip) f.equipment = equip;
+        if (item.cancelled && f.status !== 'canceled') f.status = 'canceled';
+        else if (item.diverted && f.status !== 'diverted') f.status = 'diverted';
+        updated++;
+      }
+    });
+
+    saveFlights();
+    render();
+    const t = new Date();
+    setFeedStatus('Live \u00b7 ' + updated + ' updated \u00b7 ' + added + ' added \u00b7 ' +
+      t.getHours() + ':' + String(t.getMinutes()).padStart(2, '0') + ':' + String(t.getSeconds()).padStart(2, '0'));
+  } catch (e) {
+    setFeedStatus('Error: ' + (e && e.message ? e.message : e), true);
+  }
+}
+
+function startFeedPolling() {
+  if (feedTimer) { clearInterval(feedTimer); feedTimer = null; }
+  const secs = +settings.feedInterval || 0;
+  if ((settings.feedUrl || '').trim() && secs >= 30) {
+    feedTimer = setInterval(fetchLiveFeed, secs * 1000);
+  }
+}
+
+/* ----- LEAD LINKS UI ----- */
+function renderLeadLinks() {
+  const base = window.location.origin + window.location.pathname;
+  const piers = ['A','B','C','D'];
+
+  // Lead mobile links
+  const leadList = document.getElementById('lead-link-list');
+  if (leadList) {
+    leadList.innerHTML = piers.map(p => {
+      const lead = PIER_TO_LEAD[p];
+      const count = flights.filter(f => f.teamLead === lead && f.status !== 'canceled').length;
+      const url = base + '?view=lead&lead=' + lead;
+      return '<div class="lead-link-row">' +
+        '<div>' +
+          '<div class="ll-name">' + lead + '</div>' +
+          '<div class="ll-pier">Pier ' + p + ' <span class="ll-count">' + count + '</span></div>' +
+        '</div>' +
+        '<div class="ll-link">' + url + '</div>' +
+        '<div style="display:flex;gap:6px;flex-direction:column;">' +
+          '<button class="btn" style="padding:6px 12px;font-size:11px;" onclick="copyToClipboard(\'' + url + '\', this)">Copy</button>' +
+          '<a class="btn" style="padding:6px 12px;font-size:11px;text-align:center;" href="' + url + '" target="_blank">Open</a>' +
+        '</div>' +
+      '</div>';
+    }).join('');
+  }
+
+  // Pier TV links
+  const pierList = document.getElementById('pier-link-list');
+  if (pierList) {
+    pierList.innerHTML = piers.map(p => {
+      const count = flights.filter(f => f.pierSide === p && f.status !== 'canceled').length;
+      const url = base + '?view=pier' + p;
+      return '<div style="display:flex; align-items:center; gap:10px; padding:6px 0; border-bottom:1px solid var(--row-line);">' +
+        '<span class="pier-badge pier-' + p + '">' + p + '</span>' +
+        '<span style="font-family:\'Barlow Condensed\'; font-weight:700; color:var(--white);">Pier ' + p + '</span>' +
+        '<span style="color:var(--text-muted); font-size:11px;">' + count + ' flights</span>' +
+        '<code style="flex:1; font-size:10px; color:var(--text-dim); overflow:hidden; text-overflow:ellipsis;">' + url + '</code>' +
+        '<button class="btn" style="padding:4px 10px; font-size:10px;" onclick="copyToClipboard(\'' + url + '\', this)">Copy</button>' +
+      '</div>';
+    }).join('');
+  }
+}
+
+window.copyToClipboard = function(text, btn) {
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text).then(() => {
+      const orig = btn.textContent;
+      btn.textContent = '✓ Copied';
+      setTimeout(() => { btn.textContent = orig; }, 1400);
+    }).catch(() => fallbackCopy(text, btn));
+  } else {
+    fallbackCopy(text, btn);
+  }
+};
+function fallbackCopy(text, btn) {
+  const ta = document.createElement('textarea');
+  ta.value = text;
+  ta.style.position = 'fixed'; ta.style.left = '-1000px';
+  document.body.appendChild(ta);
+  ta.select();
+  try { document.execCommand('copy'); btn.textContent = '✓ Copied'; setTimeout(() => { btn.textContent = 'Copy'; }, 1400); }
+  catch (e) { alert('Copy failed — please select the link manually.'); }
+  document.body.removeChild(ta);
+}
+
+/* ----- REPORTS / CSV EXPORT ----- */
+function renderReportStats() {
+  const k = computeKPIs();
+  const e = id => document.getElementById(id);
+  if (e('rep-total')) e('rep-total').textContent = k.total;
+  if (e('rep-complete')) e('rep-complete').textContent = k.completed;
+  if (e('rep-otp')) e('rep-otp').textContent = k.otp == null ? '—' : k.otp + '%';
+  if (e('rep-missing')) e('rep-missing').textContent = k.missingBagsTotal;
+}
+
+function csvEscape(v) {
+  if (v == null) return '';
+  const s = String(v);
+  if (/[",\n]/.test(s)) return '"' + s.replace(/"/g, '""') + '"';
+  return s;
+}
+function exportCSV() {
+  const today = new Date().toISOString().slice(0,10);
+  const headers = [
+    'Date','Flight','Tail','Destination','Gate','Pier',
+    'Sched ETD','New ETD','Cutoff Time',
+    'Cart Out','Variance (min)','Gate Arrival','On-Time (Y/N)',
+    'Bagroom Agent','Exit Scan Agent','Exit Scan Emp #',
+    'Delivery Agent','Delivery Emp #',
+    'Team Lead','Missing Bags','Reroute Notes','Delay Reason','Final Status',
+    'Exit Scan At','Cart Out At','Delivered At','Completed At'
+  ];
+  const rows = [headers.join(',')];
+  flights.forEach(f => {
+    const etdMin = parseTimeToMinutes(f.eta || f.sched);
+    const cutoff = etdMin != null ? fmtTime(etdMin - settings.cutoffBuffer) : '';
+    const v = computeVariance(f);
+    const onTime = v == null ? '' : (v >= 0 ? 'Y' : 'N');
+    // Pull workflow detail from statusHistory
+    const hist = f.statusHistory || [];
+    const findHist = (status) => {
+      // last entry with that status
+      for (let i = hist.length - 1; i >= 0; i--) if (hist[i].status === status) return hist[i];
+      return null;
+    };
+    const fmtIso = (iso) => {
+      if (!iso) return '';
+      try {
+        const d = new Date(iso);
+        return d.toLocaleTimeString('en-US', { hour:'numeric', minute:'2-digit' });
+      } catch (e) { return iso; }
+    };
+    const hExitScan = findHist('exitScanned');
+    const hCartOut = findHist('cartOut');
+    const hDeliv = findHist('deliveredAtGate');
+    const hComplete = findHist('complete');
+
+    rows.push([
+      today, f.flight, f.tail, f.dest, f.gate, f.pierSide,
+      f.sched, f.eta, cutoff,
+      f.cartOutActual,
+      v == null ? '' : v,
+      f.gateArrivalTime, onTime,
+      f.bagroomAgent,
+      f.exitScanAgent || (hExitScan ? hExitScan.by : ''),
+      hExitScan ? (hExitScan.empId || '') : '',
+      f.deliveryAgent || (hDeliv ? hDeliv.by : ''),
+      hDeliv ? (hDeliv.empId || '') : '',
+      f.teamLead, f.missingBags, f.rerouteNotes, f.delayReason,
+      f.status || (hist.length ? hist[hist.length-1].status : 'pending'),
+      hExitScan ? fmtIso(hExitScan.at) : '',
+      hCartOut ? fmtIso(hCartOut.at) : '',
+      hDeliv ? fmtIso(hDeliv.at) : '',
+      hComplete ? fmtIso(hComplete.at) : ''
+    ].map(csvEscape).join(','));
+  });
+  downloadCSV(rows.join('\n'), 'Delta_AUS_Bagroom_' + today + '.csv');
+}
+function exportFeedbackCSV() {
+  const today = new Date().toISOString().slice(0,10);
+  const headers = ['Timestamp','Type','Category','Note','Author'];
+  const rows = [headers.join(',')];
+  feedback.forEach(fb => {
+    rows.push([
+      fb.at, fb.tone || '', fb.kind, fb.text || '', fb.by || ''
+    ].map(csvEscape).join(','));
+  });
+  downloadCSV(rows.join('\n'), 'Delta_AUS_Feedback_' + today + '.csv');
+}
+function downloadCSV(content, filename) {
+  const blob = new Blob([content], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  setTimeout(() => { document.body.removeChild(a); URL.revokeObjectURL(url); }, 100);
+}
+
+/* ----- FEEDBACK DRAWER ----- */
+const FB_LABELS = {
+  'timer-helpful':       { tone:'pos', label:'Timer helpful' },
+  'mobile-link-useful':  { tone:'pos', label:'Mobile link useful' },
+  'screen-hard-to-read': { tone:'neg', label:'Screen hard to read' },
+  'flight-missing':      { tone:'neg', label:'Flight missing' },
+  'gate-changed':        { tone:'neg', label:'Gate changed (not caught)' },
+  'agent-unclear':       { tone:'neg', label:'Agent unclear' },
+  'other':               { tone:'note', label:'Note' }
+};
+function openFeedback() {
+  document.getElementById('feedback-drawer').classList.add('show');
+  document.getElementById('drawer-backdrop').classList.add('show');
+  renderFeedbackList();
+}
+function closeFeedback() {
+  document.getElementById('feedback-drawer').classList.remove('show');
+  document.getElementById('drawer-backdrop').classList.remove('show');
+}
+function addFeedback(kind, text, author) {
+  const meta = FB_LABELS[kind] || { tone:'note', label:kind };
+  feedback.unshift({
+    id: 'fb' + Date.now(),
+    at: new Date().toISOString(),
+    kind: kind,
+    tone: meta.tone,
+    label: meta.label,
+    text: (text || '').trim(),
+    by: (author || '').trim().toUpperCase()
+  });
+  saveFeedback();
+  renderFeedbackList();
+  updateFeedbackBadge();
+}
+function renderFeedbackList() {
+  const list = document.getElementById('feedback-list');
+  if (!list) return;
+  if (!feedback.length) {
+    list.innerHTML = '<div style="padding:16px; color:var(--text-muted); font-size:12px; text-align:center;">No feedback logged yet. Tap an option above to log one.</div>';
+    return;
+  }
+  list.innerHTML = feedback.slice(0, 30).map(fb => {
+    const t = new Date(fb.at);
+    const tStr = t.toLocaleString('en-US', { month:'short', day:'numeric', hour:'numeric', minute:'2-digit' });
+    return '<div class="feedback-item ' + fb.tone + '">' +
+      '<span class="fb-tag">' + esc(fb.label || fb.kind) + '</span>' +
+      '<span class="fb-text">' + (fb.text ? esc(fb.text) : '') + (fb.by ? ' <span style="color:var(--gold-bright);">— ' + esc(fb.by) + '</span>' : '') + '</span>' +
+      '<span class="fb-time">' + tStr + '</span>' +
+    '</div>';
+  }).join('');
+}
+function updateFeedbackBadge() {
+  // Badge inside feedback button — show count of items logged today
+  const today = new Date().toISOString().slice(0,10);
+  const count = feedback.filter(fb => (fb.at || '').slice(0,10) === today).length;
+  const btn = document.getElementById('feedback-btn');
+  if (!btn) return;
+  const txt = '💬 Feedback' + (count > 0 ? ' (' + count + ')' : '');
+  btn.textContent = txt;
+}
+
+/* ----- RESET TRIAL DATA ----- */
+function resetTrialData() {
+  if (!confirm('Reset all data?\n\nThis clears flights, handoff notes, and feedback. The live feed will repopulate real flights on the next refresh. Settings remain.')) return;
+  try {
+    localStorage.removeItem(LS_FLIGHTS);
+    localStorage.removeItem(LS_HANDOFF);
+    localStorage.removeItem(LS_FEEDBACK);
+  } catch (e) {}
+  flights = [];  // live board: real flights repopulate from the live feed on next refresh
+  handoff = [...DEFAULT_HANDOFF];
+  feedback = [];
+  saveFlights(); saveHandoff(); saveFeedback();
+  render(); renderHandoff(); updateFeedbackBadge();
+  alert('Trial data reset. ' + flights.length + ' flights loaded.');
+}
+function clearAll() {
+  if (!confirm('Remove ALL flights from the board?')) return;
+  flights = [];
+  saveFlights(); render(); renderFlightList();
+}
+
+/* ============ HANDOFF DRAWER ============ */
+function openHandoff() {
+  document.getElementById('handoff-drawer').classList.add('show');
+  document.getElementById('drawer-backdrop').classList.add('show');
+  renderHandoff();
+}
+function closeHandoff() {
+  document.getElementById('handoff-drawer').classList.remove('show');
+  document.getElementById('drawer-backdrop').classList.remove('show');
+}
+function renderHandoff() {
+  const wrap = document.getElementById('handoff-list');
+  const items = handoff.filter(h => {
+    if (handoffFilter === 'open') return !h.resolved;
+    if (handoffFilter === 'resolved') return h.resolved;
+    return true;
+  });
+  if (items.length === 0) {
+    wrap.innerHTML = '<div class="handoff-empty"><h3>No notes</h3><p>Add a handoff note for the next shift above.</p></div>';
+    updateHandoffBadge();
+    return;
+  }
+  // Sort: open first, then most recent
+  items.sort((a, b) => {
+    if (a.resolved !== b.resolved) return a.resolved ? 1 : -1;
+    return new Date(b.timestamp) - new Date(a.timestamp);
+  });
+  const catNames = {'missing-bag':'Missing Bag','reroute':'Reroute','late-bag':'Late Bag','gate-change':'Gate Change','general':'General'};
+  wrap.innerHTML = items.map(h => {
+    const ts = new Date(h.timestamp);
+    const ago = timeAgo(ts);
+    return '<div class="handoff-item cat-' + h.category + ' ' + (h.resolved ? 'resolved' : '') + '">' +
+      '<div class="handoff-meta">' +
+        '<span class="handoff-cat-tag cat-' + h.category + '">' + (catNames[h.category] || h.category) + '</span>' +
+        '<span class="handoff-author">' + (esc(h.author) || '—') + '</span>' +
+        '<span class="handoff-time">' + ago + '</span>' +
+      '</div>' +
+      '<div class="handoff-text">' + esc(h.text) + '</div>' +
+      '<div class="handoff-actions">' +
+        (h.resolved
+          ? '<button class="mini-btn" onclick="toggleHandoff(\'' + h.id + '\')">Re-Open</button>'
+          : '<button class="mini-btn" onclick="toggleHandoff(\'' + h.id + '\')">✓ Mark Resolved</button>') +
+        '<button class="mini-btn del" onclick="deleteHandoff(\'' + h.id + '\')">Delete</button>' +
+      '</div>' +
+    '</div>';
+  }).join('');
+  updateHandoffBadge();
+}
+function timeAgo(d) {
+  const diff = (Date.now() - d.getTime()) / 1000;
+  if (diff < 60) return 'just now';
+  if (diff < 3600) return Math.floor(diff / 60) + 'm ago';
+  if (diff < 86400) return Math.floor(diff / 3600) + 'h ago';
+  return Math.floor(diff / 86400) + 'd ago';
+}
+function updateHandoffBadge() {
+  const openCount = handoff.filter(h => !h.resolved).length;
+  const badge = document.getElementById('handoff-count');
+  badge.textContent = openCount;
+  badge.style.display = openCount > 0 ? '' : 'none';
+}
+function addHandoff() {
+  const text = document.getElementById('handoff-text').value.trim();
+  if (!text) { alert('Note text is required'); return; }
+  handoff.unshift({
+    id: 'h' + Date.now(),
+    timestamp: new Date().toISOString(),
+    category: document.getElementById('handoff-cat').value,
+    text: text,
+    author: document.getElementById('handoff-author').value.trim().toUpperCase() || '—',
+    resolved: false
+  });
+  saveHandoff();
+  document.getElementById('handoff-text').value = '';
+  renderHandoff();
+}
+function toggleHandoff(id) {
+  const h = handoff.find(x => x.id === id);
+  if (h) { h.resolved = !h.resolved; saveHandoff(); renderHandoff(); }
+}
+function deleteHandoff(id) {
+  if (!confirm('Delete this note?')) return;
+  handoff = handoff.filter(x => x.id !== id);
+  saveHandoff(); renderHandoff();
+}
+function setHandoffFilter(f) {
+  handoffFilter = f;
+  document.querySelectorAll('#handoff-drawer .mini-btn[data-filter]').forEach(b =>
+    b.classList.toggle('active', b.dataset.filter === f));
+  renderHandoff();
+}
+
+/* ============ WIRING ============ */
+document.getElementById('admin-btn').addEventListener('click', openDrawer);
+document.getElementById('drawer-close').addEventListener('click', closeDrawer);
+document.getElementById('drawer-backdrop').addEventListener('click', () => { closeDrawer(); closeHandoff(); closeFeedback(); });
+document.querySelectorAll('.drawer-tab').forEach(t => t.addEventListener('click', () => switchTab(t.dataset.tab)));
+document.getElementById('f-save').addEventListener('click', saveForm);
+document.getElementById('f-clear').addEventListener('click', resetForm);
+document.getElementById('f-delete').addEventListener('click', deleteFlight);
+document.getElementById('paste-append').addEventListener('click', pasteAppend);
+document.getElementById('paste-replace').addEventListener('click', pasteReplace);
+document.getElementById('s-save').addEventListener('click', saveSettingsFromForm);
+const feedRefreshBtn = document.getElementById('s-feed-refresh');
+if (feedRefreshBtn) feedRefreshBtn.addEventListener('click', () => fetchLiveFeed(true));
+document.getElementById('s-clear').addEventListener('click', clearAll);
+
+// Reset Trial Data button
+const resetBtn = document.getElementById('s-reset-trial');
+if (resetBtn) resetBtn.addEventListener('click', resetTrialData);
+
+// Reports CSV exports
+const csvBtn = document.getElementById('rep-csv');
+if (csvBtn) csvBtn.addEventListener('click', exportCSV);
+const fbCsvBtn = document.getElementById('rep-feedback');
+if (fbCsvBtn) fbCsvBtn.addEventListener('click', exportFeedbackCSV);
+
+// Handoff
+document.getElementById('handoff-btn').addEventListener('click', openHandoff);
+document.getElementById('handoff-close').addEventListener('click', closeHandoff);
+document.getElementById('handoff-add').addEventListener('click', addHandoff);
+document.querySelectorAll('#handoff-drawer .mini-btn[data-filter]').forEach(b =>
+  b.addEventListener('click', () => setHandoffFilter(b.dataset.filter)));
+
+// Feedback drawer
+const fbBtn = document.getElementById('feedback-btn');
+if (fbBtn) fbBtn.addEventListener('click', openFeedback);
+const fbClose = document.getElementById('feedback-close');
+if (fbClose) fbClose.addEventListener('click', closeFeedback);
+document.querySelectorAll('.fb-opt').forEach(b => {
+  b.addEventListener('click', () => {
+    const kind = b.dataset.fb;
+    // Quick-tap feedback: prompt only for initials, no required text
+    const author = prompt('Your initials (optional):', cachedInitials || '');
+    if (author === null) return; // canceled
+    if (author && author.trim()) cachedInitials = author.trim().toUpperCase();
+    addFeedback(kind, '', cachedInitials);
+    // small visual confirm
+    const orig = b.style.background;
+    b.style.background = 'var(--green)';
+    setTimeout(() => { b.style.background = orig; }, 700);
+  });
+});
+const fbSubmit = document.getElementById('fb-other-submit');
+if (fbSubmit) fbSubmit.addEventListener('click', () => {
+  const text = document.getElementById('fb-other-text').value.trim();
+  const author = document.getElementById('fb-other-author').value.trim();
+  if (!text) { alert('Please type a note first.'); return; }
+  if (author) cachedInitials = author.toUpperCase();
+  addFeedback('other', text, author);
+  document.getElementById('fb-other-text').value = '';
+  document.getElementById('fb-other-author').value = '';
+});
+
+/* ----- Credentials modal wiring ----- */
+document.getElementById('cred-confirm').addEventListener('click', submitCredModal);
+document.getElementById('cred-cancel').addEventListener('click', () => closeCredModal(null));
+// When agent types/edits initials, auto-fill their cached empId
+document.getElementById('cred-initials').addEventListener('blur', handleInitialsBlur);
+// Submit on Enter from either input
+['cred-initials', 'cred-empid'].forEach(id => {
+  document.getElementById(id).addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') { e.preventDefault(); submitCredModal(); }
+  });
+});
+// Click outside the box closes
+document.getElementById('cred-modal').addEventListener('click', (e) => {
+  if (e.target.id === 'cred-modal') closeCredModal(null);
+});
+
+document.addEventListener('keydown', (e) => {
+  // If credentials modal is open, swallow other shortcuts (esc closes it)
+  if (document.getElementById('cred-modal').classList.contains('show')) {
+    if (e.key === 'Escape') closeCredModal(null);
+    return;
+  }
+  if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT') return;
+  if (e.key === 'e' || e.key === 'E') {
+    const isOpen = document.getElementById('drawer').classList.contains('show');
+    isOpen ? closeDrawer() : openDrawer();
+  }
+  if (e.key === 'h' || e.key === 'H') {
+    const isOpen = document.getElementById('handoff-drawer').classList.contains('show');
+    isOpen ? closeHandoff() : openHandoff();
+  }
+  if (e.key === 'd' || e.key === 'D') {
+    const isOpen = document.getElementById('feedback-drawer').classList.contains('show');
+    isOpen ? closeFeedback() : openFeedback();
+  }
+  if (e.key === 'Escape') { closeDrawer(); closeHandoff(); closeFeedback(); }
+  if (e.key === 'f' || e.key === 'F') {
+    if (!document.fullscreenElement) document.documentElement.requestFullscreen();
+    else document.exitFullscreen();
+  }
+});
+
+window.openEdit = openEdit;
+window.quickDelete = quickDelete;
+window.toggleHandoff = toggleHandoff;
+window.deleteHandoff = deleteHandoff;
+
+/* Boot */
+updateClock();
+render();
+updateHandoffBadge();
+updateFeedbackBadge();
+setInterval(updateClock, 1000);
+setInterval(render, 1000);
+// Auto-configure the live feed from URL params: ?feed=<workerUrl>&interval=<secs>
+(function () {
+  try {
+    const qp = new URLSearchParams(window.location.search);
+    const feedParam = qp.get('feed');
+    if (feedParam && /^https:\/\//i.test(feedParam)) {
+      settings.feedUrl = feedParam.trim();
+      const iv = parseInt(qp.get('interval'), 10);
+      if (iv >= 30 && iv <= 3600) settings.feedInterval = iv;
+      else if (!settings.feedInterval) settings.feedInterval = 120;
+      saveSettings();
+      qp.delete('feed'); qp.delete('interval');
+      const qs = qp.toString();
+      history.replaceState(null, '', window.location.pathname + (qs ? '?' + qs : '') + window.location.hash);
+    }
+  } catch (e) {}
+})();
+startFeedPolling();
+if ((settings.feedUrl || '').trim()) fetchLiveFeed();
+if (document.getElementById('feed-status') && !(settings.feedUrl || '').trim()) setFeedStatus('Not configured');
+
+
+/* ═══════════════════════════════════════════════════════════════════════
+   PLATFORM BOOTSTRAP — added by scripts/build-board.mjs
+   Self-configures the feed and syncs workflow state for automated reports.
+   ═══════════════════════════════════════════════════════════════════════ */
+(function platformBootstrap() {
+  var ORIGIN = window.location.origin;
+  var FEED = ORIGIN + '/api/feed';
+  var INGEST = ORIGIN + '/api/ingest';
+  var SYNC_MS = 300000; // five minutes
+
+  /* --- point the board at this deployment unless told otherwise --- */
+  try {
+    var stale = settings.feedUrl && /workers\.dev/i.test(settings.feedUrl);
+    if (!settings.feedUrl || stale) {
+      settings.feedUrl = FEED;
+      if (!settings.feedInterval || settings.feedInterval < 30) settings.feedInterval = 120;
+      saveSettings();
+      var input = document.getElementById('s-feedurl');
+      if (input) input.value = settings.feedUrl;
+      startFeedPolling();
+      fetchLiveFeed();
+    }
+  } catch (e) {}
+
+  /* --- stable per-device id so several devices can post without clashing --- */
+  var deviceId;
+  try {
+    deviceId = localStorage.getItem('aus_bagroom_device');
+    if (!deviceId) {
+      deviceId = 'dev-' + Math.random().toString(36).slice(2, 9);
+      localStorage.setItem('aus_bagroom_device', deviceId);
+    }
+  } catch (e) {
+    deviceId = 'dev-anon';
+  }
+
+  /* --- push what this device knows so reports can measure the bag room --- */
+  function syncOps() {
+    try {
+      if (!Array.isArray(flights) || flights.length === 0) return;
+      fetch(INGEST, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          station: 'AUS',
+          postedAt: new Date().toISOString(),
+          device: deviceId,
+          flights: flights
+        }),
+        keepalive: true
+      }).catch(function () { /* offline is fine; next tick retries */ });
+    } catch (e) {}
+  }
+
+  setTimeout(syncOps, 15000);
+  setInterval(syncOps, SYNC_MS);
+  document.addEventListener('visibilitychange', function () {
+    if (document.visibilityState === 'hidden') syncOps();
+  });
+  window.addEventListener('pagehide', syncOps);
+})();
+
+</script>
+</body>
+</html>

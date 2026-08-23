@@ -1,0 +1,306 @@
+/**
+ * Feed assembly — merges every available source into one board-shaped payload.
+ *
+ * Precedence, highest first:
+ *   1. AeroAPI        authoritative schedule, gate, and true `cancelled` flags
+ *   2. OpenSky        observed truth: this aircraft actually left the ground
+ *   3. Learned slots  inference only, for upcoming and suspected-cancelled rows
+ *
+ * A lower-precedence source never overwrites a field a higher one supplied, and
+ * it never upgrades a row's status to a hard cancel.
+ */
+
+import { FeedFlight, FeedResponse, SourceStatus, NasSummary } from "../types";
+import { STATION, BAG_MODEL, DELTA_CARRIERS, toIata, pierFromGate, PIER_TO_LEAD } from "../config";
+import { toLocalTime } from "../time";
+import {
+  fetchDepartures,
+  isDeltaSystem,
+  callsignToFlightNumber,
+  OpenSkyFlight,
+} from "./opensky";
+import { fetchNasStatus } from "./faa";
+import { fetchAeroApiDepartures, aeroApiEnabled } from "./aeroapi";
+import { loadBaseline, saveBaseline, learn, recordObserved, projectDay, observedToday } from "../baseline";
+
+/**
+ * Opportunistic learning.
+ *
+ * Vercel's Hobby plan caps cron at one run per day, which is nowhere near
+ * enough to learn a schedule. But the board already refreshes this feed every
+ * ~120 seconds from every device on the floor — so each feed build folds what
+ * it just fetched into the baseline. The board is the poller; cron is only a
+ * safety net. Throttled per instance so a wall of TVs does not multiply writes.
+ */
+let lastLearnAt = 0;
+const LEARN_INTERVAL_MS = 60_000;
+
+async function learnOpportunistically(observed: OpenSkyFlight[]): Promise<void> {
+  if (!observed.length) return;
+  if (Date.now() - lastLearnAt < LEARN_INTERVAL_MS) return;
+  lastLearnAt = Date.now();
+  try {
+    await saveBaseline(learn(await loadBaseline(), observed));
+    await recordObserved(observed);
+  } catch {
+    // Learning is best-effort; never fail the feed over it.
+  }
+}
+
+/** An OpenSky sighting → a "Departed" board row. */
+export function departureToFeedFlight(d: OpenSkyFlight): FeedFlight {
+  const callsign = (d.callsign ?? "").trim().toUpperCase();
+  const iso = new Date(d.firstSeen * 1000).toISOString();
+  const operator = callsign.slice(0, 3);
+  const carrier = DELTA_CARRIERS.find((c) => c.prefix === operator);
+  const pax = Math.round((carrier?.seats ?? 160) * BAG_MODEL.loadFactor);
+  const bags = Math.round(pax * BAG_MODEL.bagsPerPax);
+
+  return {
+    flight: callsignToFlightNumber(callsign),
+    ident: callsign,
+    destination: toIata(d.estArrivalAirport),
+    gate: "",
+    tail: "",
+    equipment: "",
+    status: "Departed",
+    cancelled: false,
+    diverted: false,
+    etd_sched_local: "",
+    etd_est_local: "",
+    etd_actual_local: toLocalTime(iso),
+    etd_local: toLocalTime(iso),
+    delayed: false,
+    scheduled_out: null,
+    estimated_out: null,
+    actual_out: iso,
+    paxCount: pax,
+    source: "opensky",
+    confidence: 0.95,
+    operator,
+    bagEstimate: bags,
+    cartEstimate: Math.max(1, Math.ceil(bags / BAG_MODEL.bagsPerCart)),
+    note: `Confirmed airborne off ${STATION.iata} by ADS-B at ${toLocalTime(iso)}.`,
+  };
+}
+
+function mergeKey(f: FeedFlight): string {
+  return f.flight.replace(/[^A-Z0-9]/gi, "").toUpperCase();
+}
+
+/** Fill blanks on `into` from `from` without ever demoting a stronger field. */
+function enrich(into: FeedFlight, from: FeedFlight): void {
+  if (!into.destination && from.destination) into.destination = from.destination;
+  if (!into.gate && from.gate) into.gate = from.gate;
+  if (!into.tail && from.tail) into.tail = from.tail;
+  if (!into.equipment && from.equipment) into.equipment = from.equipment;
+  if (!into.scheduled_out && from.scheduled_out) {
+    into.scheduled_out = from.scheduled_out;
+    into.etd_sched_local = from.etd_sched_local;
+  }
+  if (!into.actual_out && from.actual_out) {
+    into.actual_out = from.actual_out;
+    into.etd_actual_local = from.etd_actual_local;
+  }
+  if (!into.etd_local && from.etd_local) into.etd_local = from.etd_local;
+  if (!into.note && from.note) into.note = from.note;
+
+  // Observed truth beats any inference about whether the flight went.
+  if (from.source === "opensky" && from.actual_out) {
+    into.status = into.cancelled ? into.status : "Departed";
+    into.confidence = Math.max(into.confidence, 0.95);
+  }
+
+  if (!into.gate) return;
+  const pier = pierFromGate(into.gate);
+  if (pier) {
+    into.pier = pier;
+    into.teamLead = PIER_TO_LEAD[pier];
+  }
+}
+
+export interface BuildOptions {
+  /** Skip the FAA call (used by the cron poller, which fetches it separately). */
+  includeNas?: boolean;
+}
+
+export async function buildFeed(opts: BuildOptions = {}): Promise<FeedResponse> {
+  const includeNas = opts.includeNas ?? true;
+  const sources: SourceStatus[] = [];
+  const warnings: string[] = [];
+
+  /* —— AeroAPI (optional, authoritative) —— */
+  let aero: FeedFlight[] = [];
+  if (aeroApiEnabled()) {
+    const t0 = Date.now();
+    try {
+      aero = await fetchAeroApiDepartures();
+      sources.push({
+        id: "aeroapi",
+        ok: true,
+        label: "FlightAware AeroAPI",
+        detail: "Authoritative schedule, gates and cancellations",
+        latencyMs: Date.now() - t0,
+        count: aero.length,
+      });
+    } catch (e) {
+      sources.push({
+        id: "aeroapi",
+        ok: false,
+        label: "FlightAware AeroAPI",
+        detail: String(e instanceof Error ? e.message : e),
+        latencyMs: Date.now() - t0,
+      });
+      warnings.push("AeroAPI failed; falling back to OpenSky and the learned schedule.");
+    }
+  } else {
+    sources.push({
+      id: "aeroapi",
+      ok: false,
+      label: "FlightAware AeroAPI",
+      detail: "Not configured — set AEROAPI_KEY for true cancellation flags and gates",
+    });
+  }
+
+  /* —— OpenSky (free, observed truth) —— */
+  let observed: OpenSkyFlight[] = [];
+  const t1 = Date.now();
+  try {
+    const all = await fetchDepartures();
+    observed = all.filter((d) => isDeltaSystem(d.callsign, d.estArrivalAirport));
+    sources.push({
+      id: "opensky",
+      ok: true,
+      label: "OpenSky Network",
+      detail: `${all.length} departures seen off ${STATION.icao}; ${observed.length} Delta system`,
+      latencyMs: Date.now() - t1,
+      count: observed.length,
+    });
+  } catch (e) {
+    sources.push({
+      id: "opensky",
+      ok: false,
+      label: "OpenSky Network",
+      detail: String(e instanceof Error ? e.message : e),
+      latencyMs: Date.now() - t1,
+    });
+    warnings.push(
+      "OpenSky is rate-limited or unreachable. Anonymous access allows 400 credits/day — set OPENSKY_CLIENT_ID and OPENSKY_CLIENT_SECRET to raise it to 4,000.",
+    );
+  }
+
+  /* —— Learned schedule —— */
+  await learnOpportunistically(observed);
+  const baseline = await loadBaseline();
+  const seenToday = await observedToday();
+  for (const d of observed) {
+    const cs = (d.callsign ?? "").trim().toUpperCase();
+    if (cs) seenToday.add(cs);
+  }
+  const projected = projectDay(baseline, seenToday);
+  sources.push({
+    id: "baseline",
+    ok: baseline.slots.length > 0,
+    label: "Learned schedule",
+    detail:
+      baseline.slots.length > 0
+        ? `${baseline.slots.length} slots from ${baseline.observedDays.length} observed days`
+        : "No history yet — run the poller for a few days",
+    count: projected.length,
+  });
+
+  /* —— Merge —— */
+  const byKey = new Map<string, FeedFlight>();
+  const push = (rows: FeedFlight[]) => {
+    for (const row of rows) {
+      const key = mergeKey(row);
+      const existing = byKey.get(key);
+      if (!existing) {
+        const pier = pierFromGate(row.gate);
+        if (pier) {
+          row.pier = pier;
+          row.teamLead = PIER_TO_LEAD[pier];
+        }
+        byKey.set(key, { ...row });
+      } else {
+        enrich(existing, row);
+      }
+    }
+  };
+
+  push(aero); // highest precedence first
+  push(observed.map(departureToFeedFlight));
+  push(projected);
+
+  /**
+   * Backfill destinations from the learned schedule.
+   *
+   * OpenSky only resolves `estArrivalAirport` once the aircraft has landed, so
+   * a flight that just left AUS has a blank destination for the next few hours
+   * — useless on a bag room board. The baseline knows where that callsign
+   * usually goes, so fill it in and say so in the note.
+   */
+  const learnedDest = new Map<string, string>();
+  for (const s of baseline.slots) {
+    if (s.destination && !learnedDest.has(s.callsign)) learnedDest.set(s.callsign, s.destination);
+  }
+  for (const f of byKey.values()) {
+    if (f.destination || !f.ident) continue;
+    const dest = learnedDest.get(f.ident);
+    if (!dest) continue;
+    f.destination = dest;
+    f.note = `${f.note ?? ""} Destination ${dest} inferred from prior operations of this flight number — ADS-B does not resolve an arrival airport until landing.`.trim();
+  }
+
+  const flights = [...byKey.values()].sort((a, b) => {
+    const ta = new Date(a.estimated_out || a.scheduled_out || a.actual_out || 0).getTime();
+    const tb = new Date(b.estimated_out || b.scheduled_out || b.actual_out || 0).getTime();
+    return ta - tb;
+  });
+
+  /* —— FAA overlay —— */
+  let nas: NasSummary | null = null;
+  if (includeNas) {
+    const t2 = Date.now();
+    try {
+      nas = await fetchNasStatus();
+      sources.push({
+        id: "faa",
+        ok: true,
+        label: "FAA NAS Status",
+        detail: `${nas.local.length} local, ${nas.network.length} network programs`,
+        latencyMs: Date.now() - t2,
+      });
+    } catch (e) {
+      sources.push({
+        id: "faa",
+        ok: false,
+        label: "FAA NAS Status",
+        detail: String(e instanceof Error ? e.message : e),
+        latencyMs: Date.now() - t2,
+      });
+    }
+  }
+
+  const degraded = !aeroApiEnabled();
+  if (degraded) {
+    warnings.push(
+      "Running on OpenSky only. Scheduled times come from the learned baseline, gates are unavailable, and cancellations are inferred rather than reported — every such row is marked Suspected Cancel and must be verified before the team acts on it.",
+    );
+  }
+
+  const now = new Date();
+  return {
+    airport: STATION.iata,
+    timezone: STATION.timezone,
+    generated_at: now.toISOString(),
+    generated_at_local: toLocalTime(now.toISOString(), true),
+    count: flights.length,
+    scheduled_departures: flights,
+    flights,
+    sources,
+    nas,
+    degraded,
+    warnings,
+  };
+}

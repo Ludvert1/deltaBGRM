@@ -1,0 +1,75 @@
+name: Generate shift reports
+
+# Fires the automated report builder at each shift change and end of day.
+# Times below are UTC. Austin is UTC-5 in summer (CDT) and UTC-6 in winter
+# (CST), so each run drifts an hour across the DST boundary; the report itself
+# is stamped with station local time either way.
+#
+# Setup: repository → Settings → Secrets and variables → Actions
+#   PLATFORM_URL   https://your-project.vercel.app     (required)
+#   CRON_SECRET    same value as the Vercel env var    (only if you set one)
+
+on:
+  schedule:
+    - cron: "7 18 * * *" # ~13:07 Austin — end of AM shift
+    - cron: "7 3 * * *" # ~22:07 Austin — end of PM shift
+    - cron: "23 5 * * *" # ~00:23 Austin — full day wrap
+  workflow_dispatch:
+    inputs:
+      shift:
+        description: "Shift to generate (AM, PM, MID, DAY)"
+        required: false
+        default: "DAY"
+
+jobs:
+  report:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Work out which shift this run covers
+        id: shift
+        run: |
+          case "${{ github.event.schedule }}" in
+            "7 18 * * *") echo "shift=AM"  >> "$GITHUB_OUTPUT" ;;
+            "7 3 * * *")  echo "shift=PM"  >> "$GITHUB_OUTPUT" ;;
+            "23 5 * * *") echo "shift=DAY" >> "$GITHUB_OUTPUT" ;;
+            *)            echo "shift=${{ github.event.inputs.shift || 'DAY' }}" >> "$GITHUB_OUTPUT" ;;
+          esac
+
+      - name: Generate the report
+        env:
+          PLATFORM_URL: ${{ secrets.PLATFORM_URL }}
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+          SHIFT: ${{ steps.shift.outputs.shift }}
+        run: |
+          if [ -z "$PLATFORM_URL" ]; then
+            echo "::error::PLATFORM_URL secret is not set."
+            exit 1
+          fi
+          auth=()
+          [ -n "$CRON_SECRET" ] && auth=(-H "Authorization: Bearer $CRON_SECRET")
+          code=$(curl -sS -o /tmp/report.json -w "%{http_code}" --max-time 120 \
+                 "${auth[@]}" "${PLATFORM_URL%/}/api/cron/report?shift=$SHIFT")
+          echo "HTTP $code"
+          python3 -m json.tool < /tmp/report.json || cat /tmp/report.json
+          [ "$code" = "200" ] || exit 1
+
+      - name: Put the headline in the run summary
+        if: always()
+        run: |
+          {
+            echo "## ${{ steps.shift.outputs.shift }} shift report"
+            python3 -c "
+          import json,sys
+          try:
+              d = json.load(open('/tmp/report.json'))
+          except Exception:
+              print('Report generation failed — see the step log.'); sys.exit()
+          print('**' + d.get('headline','(no headline)') + '**')
+          print()
+          print('FAA: ' + d.get('faaHeadline','—'))
+          print()
+          for c in d.get('caveats', []):
+              print('- ' + c)
+          " || true
+          } >> "$GITHUB_STEP_SUMMARY"
