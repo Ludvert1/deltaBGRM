@@ -43,6 +43,17 @@ ul{padding-left:20px;margin:8px 0}li{margin:6px 0}
 .pill{display:inline-block;padding:2px 8px;border-radius:99px;font-size:11px;font-weight:600;letter-spacing:.03em}
 .pill.cancel{background:var(--red);color:#fff}.pill.susp{background:var(--amber);color:#fff}
 .pill.delay{background:#8a6d00;color:#fff}.pill.dep{background:var(--green);color:#fff}
+.flightcard{border:1px solid var(--line);border-radius:9px;padding:14px 16px;margin:12px 0;background:var(--card);break-inside:avoid}
+.fc-head{font-size:15px;margin-bottom:8px}
+.fc-times{display:block;font-size:12.5px;color:var(--dim);margin-top:3px;font-variant-numeric:tabular-nums}
+table.steps{font-size:13px}
+table.steps td,table.steps th{padding:6px 9px}
+table.steps tr.late td{background:rgba(192,57,43,.09)}
+table.steps tr.missing td{color:var(--dim);font-style:italic}
+.verdict{margin-top:10px;padding:10px 12px;border-radius:7px;font-size:13.5px;line-height:1.55}
+.verdict.bad{background:rgba(192,57,43,.11);border-left:3px solid var(--red)}
+.verdict.good{background:rgba(30,122,69,.11);border-left:3px solid var(--green)}
+.verdict.neutral{background:rgba(120,130,145,.12);border-left:3px solid var(--dim);color:var(--dim)}
 .foot{margin-top:40px;padding-top:14px;border-top:1px solid var(--line);color:var(--dim);font-size:12.5px}
 @media print{body{padding:0}.stat{break-inside:avoid}}
 </style></head><body><div class="wrap">
@@ -131,6 +142,90 @@ ${r.analysis.ops.byLead
   .map((l) => `<tr><td><strong>${esc(l.lead)}</strong></td><td>${l.flights}</td><td>${l.completed}</td><td>${l.missingBags}</td></tr>`)
   .join("")}
 </table></div>`
+    : ""
+}
+
+${
+  r.otd && r.otd.measured > 0
+    ? `<h2>On-time departure</h2>
+<div class="stats">
+${stat("Measured", r.otd.measured)}
+${stat("On time", r.otd.onTime, "green")}
+${stat("Late", r.otd.late, r.otd.late ? "red" : "")}
+${stat("OTD", r.otd.percent !== null ? r.otd.percent + "%" : "—", (r.otd.percent ?? 100) >= 90 ? "green" : "amber")}
+${stat("Avg vs sched", r.otd.averageDelayMinutes !== null ? r.otd.averageDelayMinutes + " min" : "—")}
+${stat("Bag room fault", r.otd.bagRoomAttributable, r.otd.bagRoomAttributable ? "red" : "green")}
+${stat("Chain clean", r.otd.notBagRoom, "green")}
+${stat("Unattributable", r.otd.inconclusive, r.otd.inconclusive ? "amber" : "")}
+</div>
+${
+  r.otd.byStep.length
+    ? `<div class="scroll"><table>
+<tr><th>Step that cost the departure</th><th>Times</th><th>Role</th></tr>
+${r.otd.byStep.map((s) => `<tr><td><strong>${esc(s.label)}</strong></td><td>${s.count}</td><td>${esc(s.owner)}</td></tr>`).join("")}
+</table></div>`
+    : ""
+}`
+    : ""
+}
+
+${
+  r.otd && r.otd.byEmployee.length
+    ? `<h2>Accountability</h2>
+<p class="sub">Steps recorded by each agent, how many missed their target, and how many late departures traced back to them. A high step count with few late steps is the pattern to look for.</p>
+<div class="scroll"><table>
+<tr><th>Agent</th><th>Employee&nbsp;ID</th><th>Steps recorded</th><th>Late steps</th><th>Departures faulted</th></tr>
+${r.otd.byEmployee
+  .map(
+    (e) =>
+      `<tr><td><strong>${esc(e.initials)}</strong></td><td>${esc(e.empId || "—")}</td><td>${e.steps}</td>
+<td>${e.lateSteps ? `<span class="pill delay">${e.lateSteps}</span>` : "0"}</td>
+<td>${e.faultedDepartures ? `<span class="pill cancel">${e.faultedDepartures}</span>` : "0"}</td></tr>`,
+  )
+  .join("")}
+</table></div>`
+    : ""
+}
+
+${
+  r.steps.length
+    ? `<h2>Step trail</h2>
+<p class="sub">Every flight the bag room worked, with the time each step was recorded and by whom. <strong>Carts by</strong> is the cart-departure deadline: ETD minus the bag cutoff minus tow time from that pier.</p>
+${r.steps
+  .map((s) => {
+    const verdict = s.fault
+      ? `<div class="verdict bad"><strong>${esc(s.fault.label)} — ${s.fault.lateByMinutes} min late · ${esc(s.fault.owner)}</strong><br>${esc(s.fault.explanation)}</div>`
+      : s.inconclusive
+        ? `<div class="verdict neutral">${esc(s.inconclusive)}</div>`
+        : s.onTime
+          ? `<div class="verdict good">Departed on time${s.actualDepartureLocal ? ` at ${esc(s.actualDepartureLocal)}` : ""}.</div>`
+          : "";
+    return `<div class="flightcard">
+<div class="fc-head"><strong>${esc(s.flight)}</strong> → ${esc(s.destination || "—")} · Gate ${esc(s.gate || "?")} · Pier ${esc(s.pier || "?")} (${esc(s.teamLead || "—")})
+<span class="fc-times">Sched ${esc(s.scheduledLocal || "—")} · Carts by ${esc(s.cartDepartByLocal || "—")} (${s.cartTransitMinutes} min tow)${
+      s.actualDepartureLocal
+        ? ` · Off ${esc(s.actualDepartureLocal)}${s.departureDelayMinutes !== null ? ` (${s.departureDelayMinutes > 0 ? "+" : ""}${s.departureDelayMinutes} min)` : ""}`
+        : " · Off-blocks not yet observed"
+    }</span></div>
+<div class="scroll"><table class="steps">
+<tr><th>Step</th><th>Recorded</th><th>By</th><th>ID</th><th>Before ETD</th><th>Target</th><th>Variance</th></tr>
+${s.steps
+  .map(
+    (st) => `<tr class="${st.missing ? "missing" : st.late ? "late" : ""}">
+<td>${esc(st.label)}</td>
+<td>${st.missing ? "<em>not recorded</em>" : esc(st.atLocal)}</td>
+<td>${esc(st.by || "—")}</td>
+<td>${esc(st.empId || "—")}</td>
+<td>${st.minutesBeforeEtd !== null ? st.minutesBeforeEtd + " min" : "—"}</td>
+<td>${st.targetMinutesBeforeEtd} min</td>
+<td>${st.varianceMinutes !== null ? `${st.varianceMinutes > 0 ? "+" : ""}${st.varianceMinutes} min` : "—"}</td></tr>`,
+  )
+  .join("")}
+</table></div>
+${verdict}
+</div>`;
+  })
+  .join("")}`
     : ""
 }
 

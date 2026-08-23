@@ -22,6 +22,7 @@ import {
 import { fetchNasStatus } from "./faa";
 import { fetchAeroApiDepartures, aeroApiEnabled } from "./aeroapi";
 import { loadBaseline, saveBaseline, learn, recordObserved, projectDay, observedToday } from "../baseline";
+import { scheduleForToday, scheduleStatus } from "../schedule";
 
 /**
  * Opportunistic learning.
@@ -97,6 +98,9 @@ function enrich(into: FeedFlight, from: FeedFlight): void {
   if (!into.scheduled_out && from.scheduled_out) {
     into.scheduled_out = from.scheduled_out;
     into.etd_sched_local = from.etd_sched_local;
+    // Carry the provenance with the time. A schedule inferred from the
+    // aircraft's own movement must never be mistaken for a published one.
+    into.schedSource = from.schedSource ?? from.source;
   }
   if (!into.actual_out && from.actual_out) {
     into.actual_out = from.actual_out;
@@ -228,8 +232,29 @@ export async function buildFeed(opts: BuildOptions = {}): Promise<FeedResponse> 
     }
   };
 
+  /* —— Seeded schedule (from the board's pasted departure list) —— */
+  let seeded: FeedFlight[] = [];
+  try {
+    seeded = await scheduleForToday();
+    sources.push({
+      id: "seed",
+      ok: seeded.length > 0,
+      label: "Seeded schedule",
+      detail: (await scheduleStatus()).message,
+      count: seeded.length,
+    });
+  } catch (e) {
+    sources.push({
+      id: "seed",
+      ok: false,
+      label: "Seeded schedule",
+      detail: String(e instanceof Error ? e.message : e),
+    });
+  }
+
   push(aero); // highest precedence first
   push(observed.map(departureToFeedFlight));
+  push(seeded); // real scheduled times and gates, no key required
   push(projected);
 
   /**
@@ -250,6 +275,31 @@ export async function buildFeed(opts: BuildOptions = {}): Promise<FeedResponse> 
     if (!dest) continue;
     f.destination = dest;
     f.note = `${f.note ?? ""} Destination ${dest} inferred from prior operations of this flight number — ADS-B does not resolve an arrival airport until landing.`.trim();
+  }
+
+  /**
+   * Age the seeded rows.
+   *
+   * A scheduled departure that has come and gone with no ADS-B sighting is
+   * telling you something. A few minutes past is routine; twenty is a delay
+   * worth showing the floor; an hour and a half is very likely a cancellation.
+   * None of it is asserted as fact — the note carries the reasoning and the
+   * hard `cancelled` flag is never set from inference.
+   */
+  const nowMs = Date.now();
+  for (const f of byKey.values()) {
+    if (f.actual_out || f.cancelled || f.source === "aeroapi") continue;
+    if (!f.scheduled_out) continue;
+    const lateBy = Math.round((nowMs - new Date(f.scheduled_out).getTime()) / 60_000);
+    if (lateBy > 90) {
+      f.status = "Suspected Cancel";
+      f.confidence = Math.min(f.confidence, 0.6);
+      f.note = `Scheduled ${f.etd_sched_local} but ${lateBy} min past with no ADS-B departure. Suspected cancellation — confirm before pulling bags.`;
+    } else if (lateBy > 20) {
+      f.status = "Delayed";
+      f.delayed = true;
+      f.note = `Scheduled ${f.etd_sched_local}, now ${lateBy} min past with no departure observed. Treat as delayed and hold the bags.`;
+    }
   }
 
   const flights = [...byKey.values()].sort((a, b) => {
@@ -282,10 +332,14 @@ export async function buildFeed(opts: BuildOptions = {}): Promise<FeedResponse> 
     }
   }
 
-  const degraded = !aeroApiEnabled();
+  const degraded = !aeroApiEnabled() && seeded.length === 0;
   if (degraded) {
     warnings.push(
-      "Running on OpenSky only. Scheduled times come from the learned baseline, gates are unavailable, and cancellations are inferred rather than reported — every such row is marked Suspected Cancel and must be verified before the team acts on it.",
+      "Running on OpenSky only. There is no forward schedule yet, so the board has nothing to work before a flight is already airborne. Paste today's Delta departure list into the board once (Ops Entry → Paste) — the platform keeps it, gates included, and projects it forward from then on. Setting AEROAPI_KEY does the same automatically.",
+    );
+  } else if (!aeroApiEnabled()) {
+    warnings.push(
+      "Scheduled times and gates come from the departure list pasted into the board, and cancellations are inferred from a missing ADS-B departure rather than reported — those rows are marked Suspected Cancel and must be verified before the team acts on them.",
     );
   }
 

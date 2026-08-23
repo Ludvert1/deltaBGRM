@@ -11,7 +11,8 @@
  * rendering, so it can be mailed, printed for the shift handover, or diffed.
  */
 
-import { FeedFlight, NasSummary, OpsFlight, Snapshot } from "./types";
+import { FeedFlight, FlightStepAnalysis, NasSummary, OpsFlight, OtdSummary, Snapshot } from "./types";
+import { analyzeAll, summarizeOtd } from "./steps";
 import { BagRoomAnalysis, analyze, shiftFor } from "./analytics";
 import { nasHeadline } from "./providers/faa";
 import { STATION } from "./config";
@@ -30,6 +31,10 @@ export interface Report {
   analysis: BagRoomAnalysis;
   timeline: { at: string; label: string; detail: string }[];
   disruptions: FeedFlight[];
+  /** Per-flight step trail with timestamps, owners and fault attribution. */
+  steps: FlightStepAnalysis[];
+  /** On-time departure roll-up measured against ADS-B off-blocks. */
+  otd: OtdSummary | null;
   narrative: string[];
   caveats: string[];
   snapshotCount: number;
@@ -50,13 +55,25 @@ export async function generateReport(opts: {
   const ops = (await store.get<OpsFlight[]>(KEYS.opsDay(date))) ?? [];
 
   const analysis = analyze(opts.flights, opts.nas, ops);
+  const steps = ops.length ? analyzeAll(ops, opts.flights) : [];
+  const otd = steps.length ? summarizeOtd(steps) : null;
   const disruptions = opts.flights.filter(
     (f) => f.cancelled || f.status === "Suspected Cancel" || f.status === "Delayed" || f.diverted,
   );
 
   const timeline = buildTimeline(snapshots);
-  const narrative = buildNarrative(analysis, disruptions, opts.nas);
+  const narrative = buildNarrative(analysis, disruptions, opts.nas, otd, steps);
   const caveats = buildCaveats(analysis, opts.flights, snapshots.length);
+  if (otd && otd.inconclusive > 0) {
+    caveats.push(
+      `${otd.inconclusive} late departure${otd.inconclusive === 1 ? "" : "s"} could not be attributed: either steps went unlogged, or every logged step met its target and the cause lies outside the bag room. Attribution is only as good as the button presses behind it.`,
+    );
+  }
+  if (steps.length === 0) {
+    caveats.push(
+      "No step trail was available, so nothing in this report speaks to which part of the chain ran late. That data arrives when agents advance flights on the board.",
+    );
+  }
   const now = new Date();
 
   return {
@@ -71,6 +88,8 @@ export async function generateReport(opts: {
     analysis,
     timeline,
     disruptions,
+    steps,
+    otd,
     narrative,
     caveats,
     snapshotCount: snapshots.length,
@@ -132,6 +151,8 @@ function buildNarrative(
   a: BagRoomAnalysis,
   disruptions: FeedFlight[],
   nas: NasSummary | null,
+  otd: OtdSummary | null,
+  steps: FlightStepAnalysis[],
 ): string[] {
   const lines: string[] = [];
   const t = a.totals;
@@ -147,8 +168,10 @@ function buildNarrative(
   const busiest = [...a.piers].sort((x, y) => y.departures - x.departures)[0];
   if (busiest && busiest.departures > 0) {
     lines.push(
-      `Pier ${busiest.pier} (${busiest.lead}) carried the heaviest load with ${busiest.departures} departures and about ${busiest.bags.toLocaleString()} bags${
-        busiest.peakWindow ? `, peaking at ${busiest.peakWindow} with ${busiest.peakConcurrent} departures inside 20 minutes` : ""
+      `Pier ${busiest.pier} (${busiest.lead}) carried the heaviest load with ${busiest.departures} departure${busiest.departures === 1 ? "" : "s"} and about ${busiest.bags.toLocaleString()} bags${
+        busiest.peakWindow && busiest.peakConcurrent > 1
+          ? `, peaking at ${busiest.peakWindow} with ${busiest.peakConcurrent} departures inside 20 minutes`
+          : ""
       }.`,
     );
   }
@@ -190,7 +213,7 @@ function buildNarrative(
   if (a.ops) {
     const o = a.ops;
     lines.push(
-      `The board recorded workflow on ${o.tracked} flights. Cart-out was logged on ${o.cartOutRecorded}${
+      `The board recorded workflow on ${o.tracked} flight${o.tracked === 1 ? "" : "s"}. Cart-out was logged on ${o.cartOutRecorded}${
         o.otpPercent !== null ? `, ${o.otpPercent}% of them ahead of the bag cutoff` : ""
       }${o.avgVarianceMinutes !== null ? `, averaging ${o.avgVarianceMinutes} minutes of slack` : ""}.`,
     );
@@ -209,6 +232,38 @@ function buildNarrative(
     lines.push(
       "No bag room workflow data was received for this period — the board has not pushed ops data to /api/ingest, so cart-out performance and missing-bag counts are absent from this report.",
     );
+  }
+
+  if (otd && otd.measured > 0) {
+    lines.push(
+      `On-time departure: ${otd.percent}% — ${otd.onTime} of ${otd.measured} measured departure${otd.measured === 1 ? "" : "s"} left within a minute of schedule${
+        otd.averageDelayMinutes !== null ? `, averaging ${otd.averageDelayMinutes} min against the clock` : ""
+      }.`,
+    );
+    if (otd.late > 0) {
+      lines.push(
+        `Of ${otd.late} late departure${otd.late === 1 ? "" : "s"}, ${otd.bagRoomAttributable} ${otd.bagRoomAttributable === 1 ? "traces" : "trace"} to a bag room step that missed its target, ${otd.notBagRoom} had a clean bag chain, and ${otd.inconclusive} cannot be attributed either way from the record.`,
+      );
+    }
+    if (otd.byStep.length) {
+      lines.push(
+        `The steps that cost departures: ${otd.byStep
+          .map((s) => `${s.label} (${s.count})`)
+          .join(", ")}.`,
+      );
+    }
+    const faults = steps.filter((s) => s.fault);
+    if (faults.length) {
+      lines.push(
+        `Specifics: ${faults
+          .slice(0, 4)
+          .map(
+            (s) =>
+              `${s.flight} — ${s.fault!.label} ${s.fault!.lateByMinutes} min late (${s.fault!.owner}), departure ${s.departureDelayMinutes} min late`,
+          )
+          .join("; ")}${faults.length > 4 ? `, and ${faults.length - 4} more` : ""}.`,
+      );
+    }
   }
 
   if (disruptions.length) {
@@ -238,7 +293,11 @@ function buildCaveats(a: BagRoomAnalysis, flights: FeedFlight[], snapshots: numb
       "Bag room performance figures are absent: no ops data was ingested. Enable the board's platform sync to include cart-out timing, missing bags and lead performance.",
     );
   }
-  if (snapshots < 12) {
+  if (snapshots === 0) {
+    caveats.push(
+      "No poll snapshots were stored for this period, so there is no timeline of how the day developed — only its end state. The poller writes one snapshot per run; see the scheduling notes in the README.",
+    );
+  } else if (snapshots < 12) {
     caveats.push(
       `Only ${snapshots} poll snapshot${snapshots === 1 ? " exists" : "s exist"} for this period, so the timeline is sparse. The poller should be running every few minutes — see the scheduling notes in the README.`,
     );

@@ -16,6 +16,7 @@ import { store, KEYS } from "@/lib/store";
 import { localDate } from "@/lib/time";
 import { OpsFlight, OpsIngest } from "@/lib/types";
 import { opsPerformance } from "@/lib/analytics";
+import { seedFromOps } from "@/lib/schedule";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -68,6 +69,11 @@ export async function POST(req: NextRequest) {
   const rows = [...merged.values()];
   await store.set(KEYS.opsDay(date), rows);
 
+  // The same payload carries the schedule half of each row — flight number,
+  // scheduled time, gate, destination, equipment. Keeping it is what gives the
+  // platform a forward schedule without a paid API key.
+  const seeded = await seedFromOps(rows);
+
   return NextResponse.json(
     {
       ok: true,
@@ -75,6 +81,7 @@ export async function POST(req: NextRequest) {
       received: incoming.length,
       stored: rows.length,
       device: body.device ?? null,
+      schedule: seeded,
       performance: opsPerformance(rows),
     },
     { headers: CORS },

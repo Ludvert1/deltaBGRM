@@ -166,6 +166,7 @@ export async function fetchAeroApiDepartures(): Promise<FeedFlight[]> {
         actual_out: act,
         paxCount: pax,
         source: "aeroapi",
+        schedSource: sched ? "aeroapi" : undefined,
         confidence: 1,
         operator: (f.operator || f.operator_icao || "").toUpperCase(),
         pier: pier || undefined,

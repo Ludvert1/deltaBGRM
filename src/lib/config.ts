@@ -68,6 +68,43 @@ export const ICAO_TO_IATA: Record<string, string> = {
   KPHX: "PHX", KLAS: "LAS", KSAN: "SAN", KEWR: "EWR", KCLT: "CLT", KBNA: "BNA",
 };
 
+/**
+ * Minutes to tow a cart train from the bag room to plane side, by pier.
+ *
+ * This is the number the whole alert chain hangs on. The bag cutoff is when
+ * bags must be AT the aircraft; carts have to leave the bag room this many
+ * minutes before that. Walk it with a stopwatch on your own floor and put the
+ * real numbers here — a two-minute error here is a two-minute error on every
+ * alert the platform ever raises.
+ */
+export const CART_TRANSIT_MINUTES: Record<string, number> = {
+  A: 6,
+  B: 7,
+  C: 9,
+  D: 11,
+};
+export const CART_TRANSIT_DEFAULT = 8;
+
+export function cartTransitFor(pier?: string | null): number {
+  if (!pier) return CART_TRANSIT_DEFAULT;
+  return CART_TRANSIT_MINUTES[pier.toUpperCase()] ?? CART_TRANSIT_DEFAULT;
+}
+
+/**
+ * Targets for each step of the outbound chain, in minutes before ETD.
+ * A step that completes later than its target is what the fault-attribution
+ * engine points at when a departure goes late.
+ */
+export const STEP_TARGETS: { status: string; label: string; minutesBeforeEtd: number; owner: string }[] = [
+  { status: "assigned", label: "Assigned", minutesBeforeEtd: 90, owner: "teamLead" },
+  { status: "exitScanned", label: "Exit Scanned", minutesBeforeEtd: 55, owner: "exitScanAgent" },
+  // Fallback only — the real cart-out target is cutoffBuffer + this pier's
+  // transit time, computed per flight in analytics.ts (cartOutTargetMinutes).
+  { status: "cartOut", label: "Cart Out", minutesBeforeEtd: 53, owner: "bagroomAgent" },
+  { status: "deliveredAtGate", label: "Delivered at Gate", minutesBeforeEtd: 45, owner: "deliveryAgent" },
+  { status: "complete", label: "Complete", minutesBeforeEtd: 20, owner: "teamLead" },
+];
+
 /** Outbound bag-room operating assumptions. Tune to your station's actuals. */
 export const BAG_MODEL = {
   /** Average checked bags per passenger on a domestic Delta segment. */

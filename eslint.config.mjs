@@ -12,6 +12,10 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Browser-side board code: classic ES5 script injected into a standalone
+    // HTML page, not part of the Next.js app and not type-checked with it.
+    "board/**",
+    "public/board.html",
   ]),
 ]);
 

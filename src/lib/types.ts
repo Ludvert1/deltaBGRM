@@ -8,7 +8,7 @@ export type FlightStatus =
   | "Suspected Cancel"
   | "Diverted";
 
-export type SourceId = "aeroapi" | "opensky" | "baseline" | "manual";
+export type SourceId = "aeroapi" | "opensky" | "seed" | "baseline" | "manual";
 
 /**
  * A single departure as the bag room board consumes it.
@@ -61,6 +61,12 @@ export interface FeedFlight {
   bagEstimate?: number;
   /** Estimated carts required. */
   cartEstimate?: number;
+  /**
+   * Which source supplied `scheduled_out`. On-time performance is only ever
+   * measured against a published or pasted schedule — never against a time
+   * derived from the aircraft's own movement, which would always score 100%.
+   */
+  schedSource?: SourceId;
   /** Human-readable note explaining a suspected cancel or inference. */
   note?: string;
 }
@@ -171,7 +177,10 @@ export interface OpsFlight {
   missingBags?: number;
   rerouteNotes?: string;
   status?: string;
-  statusHistory?: { status: string; at: string; by?: string }[];
+  /** Every step the board recorded: what, when, by whom, employee id. */
+  statusHistory?: { status: string; at: string; by?: string; empId?: string }[];
+  /** Local time carts actually left the bag room, e.g. "5:27 AM". */
+  gateArrivalTime?: string;
   equipment?: string;
   paxCount?: number;
 }
@@ -181,4 +190,102 @@ export interface OpsIngest {
   postedAt: string;
   device?: string;
   flights: OpsFlight[];
+}
+
+/* ——— Seeded schedule (from the board's pasted departure list) ——— */
+
+export interface SeededSlot {
+  /** "DL 1242" */
+  flight: string;
+  /** Minutes after local midnight of the scheduled departure. */
+  minuteOfDay: number;
+  gate: string;
+  destination: string;
+  equipment: string;
+  /** Seats assumed for this gauge, used for bag estimation. */
+  seats: number;
+  /** 0=Sunday … 6=Saturday, station local. */
+  dow: number;
+  updatedAt: string;
+}
+
+export interface SeededSchedule {
+  date: string;
+  updatedAt: string;
+  slots: SeededSlot[];
+}
+
+/* ——— Step timing and accountability ——— */
+
+export interface StepRecord {
+  status: string;
+  label: string;
+  /** ISO timestamp the step was recorded. */
+  at: string | null;
+  /** Local display time, e.g. "5:27 AM". */
+  atLocal: string;
+  /** Initials of whoever pressed the button. */
+  by: string;
+  /** Employee id captured alongside the initials. */
+  empId: string;
+  /** Minutes before ETD this step was completed (negative = after ETD). */
+  minutesBeforeEtd: number | null;
+  /** The target for this step on this flight. */
+  targetMinutesBeforeEtd: number;
+  /** Positive = ahead of target, negative = late. */
+  varianceMinutes: number | null;
+  /** Minutes since the previous completed step. */
+  durationFromPreviousMinutes: number | null;
+  late: boolean;
+  missing: boolean;
+}
+
+export interface FlightStepAnalysis {
+  flight: string;
+  destination: string;
+  gate: string;
+  pier: string;
+  teamLead: string;
+  scheduledLocal: string;
+  etdLocal: string;
+  /** When carts had to leave the bag room: ETD − cutoff − pier transit. */
+  cartDepartByLocal: string;
+  cartTransitMinutes: number;
+  steps: StepRecord[];
+  /** Actual off-blocks from ADS-B, when the platform saw it. */
+  actualDepartureLocal: string | null;
+  /** Minutes late off the scheduled time. Negative = early. */
+  departureDelayMinutes: number | null;
+  onTime: boolean | null;
+  /** The step the evidence points at when the departure went late. */
+  fault: {
+    step: string;
+    label: string;
+    owner: string;
+    lateByMinutes: number;
+    explanation: string;
+  } | null;
+  /** Set when the record cannot support an attribution. */
+  inconclusive: string | null;
+}
+
+export interface OtdSummary {
+  measured: number;
+  onTime: number;
+  late: number;
+  percent: number | null;
+  averageDelayMinutes: number | null;
+  /** How many late departures the bag chain appears responsible for. */
+  bagRoomAttributable: number;
+  /** Late departures where the bag chain was demonstrably clean. */
+  notBagRoom: number;
+  inconclusive: number;
+  byStep: { step: string; label: string; count: number; owner: string }[];
+  byEmployee: {
+    initials: string;
+    empId: string;
+    steps: number;
+    lateSteps: number;
+    faultedDepartures: number;
+  }[];
 }

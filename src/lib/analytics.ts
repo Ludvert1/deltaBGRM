@@ -11,8 +11,9 @@
  */
 
 import { FeedFlight, NasSummary, OpsFlight } from "./types";
-import { BAG_MODEL, PIER_TO_LEAD, STATION } from "./config";
+import { BAG_MODEL, PIER_TO_LEAD, STATION, pierFromGate, cartTransitFor } from "./config";
 import { localParts, minutesBetween } from "./time";
+import { parseBoardTime } from "./analytics-time";
 
 export interface PierLoad {
   pier: string;
@@ -259,29 +260,24 @@ export function opsPerformance(ops: OpsFlight[]): OpsPerformance {
 }
 
 /**
- * Minutes of slack at cart-out: positive means the cart left before the bag
- * cutoff, negative means it left late. Mirrors the board's computeVariance().
+ * Minutes of slack at cart-out: positive means the carts rolled with time in
+ * hand, negative means they left too late to make the cutoff.
+ *
+ * The deadline is ETD − bag cutoff − tow time from that pier, because what
+ * matters is when the bags reach the aircraft, not when they leave the room.
+ * The board's own computeVariance() is overridden to match, so the KPI on the
+ * floor and the KPI in the report are the same number.
  */
 export function cartOutVariance(f: OpsFlight): number | null {
   const etd = parseBoardTime(f.eta || f.sched);
   const actual = parseBoardTime(f.cartOutActual);
   if (etd === null || actual === null) return null;
-  const cutoff = etd - BAG_MODEL.cutoffBufferMinutes;
-  return cutoff - actual;
+  const pier = (f.pierSide || pierFromGate(f.gate) || "").toUpperCase();
+  const mustLeaveBy = etd - BAG_MODEL.cutoffBufferMinutes - cartTransitFor(pier);
+  return mustLeaveBy - actual;
 }
 
-/** "6:15 AM" → minutes after local midnight. */
-export function parseBoardTime(s?: string | null): number | null {
-  if (!s) return null;
-  const m = String(s).trim().toUpperCase().match(/^(\d{1,2}):(\d{2})\s*(AM|PM)?$/);
-  if (!m) return null;
-  let h = Number(m[1]);
-  const min = Number(m[2]);
-  const ap = m[3];
-  if (ap === "PM" && h !== 12) h += 12;
-  if (ap === "AM" && h === 12) h = 0;
-  return h * 60 + min;
-}
+
 
 function confidence(flights: FeedFlight[]): BagRoomAnalysis["confidence"] {
   if (!flights.length) {
@@ -306,4 +302,4 @@ export function shiftFor(at: Date = new Date()): "AM" | "PM" | "MID" {
   return "MID";
 }
 
-export { minutesBetween };
+export { minutesBetween, parseBoardTime };

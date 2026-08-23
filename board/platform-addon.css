@@ -1,0 +1,266 @@
+/* Platform add-on styling — injected by scripts/build-board.mjs.
+   Scoped entirely to .pa-* so nothing here can touch the board's own styles.
+   Colours are read from the board's existing custom properties where they
+   exist, with hard fallbacks so the add-on still reads correctly on its own. */
+
+.pa-barwrap {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 900;
+  display: flex;
+  align-items: stretch;
+  gap: 8px;
+  padding: 8px 10px;
+  background: rgba(8, 10, 14, 0.94);
+  backdrop-filter: blur(10px);
+  border-top: 1px solid rgba(255, 255, 255, 0.12);
+  font-family: inherit;
+}
+
+.pa-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  overflow-x: auto;
+  flex: 1;
+  scrollbar-width: thin;
+}
+
+.pa-bar-label {
+  flex: 0 0 auto;
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.5);
+  padding-right: 4px;
+}
+
+.pa-bar-empty {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.45);
+  padding: 6px 2px;
+}
+
+.pa-chip {
+  flex: 0 0 auto;
+  display: grid;
+  grid-template-columns: auto auto;
+  grid-gap: 0 10px;
+  align-items: baseline;
+  padding: 6px 12px;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  background: rgba(255, 255, 255, 0.05);
+  cursor: pointer;
+  color: #fff;
+}
+
+.pa-chip:hover {
+  border-color: rgba(255, 255, 255, 0.4);
+}
+
+.pa-chip-flt {
+  font-weight: 700;
+  font-size: 14px;
+  letter-spacing: 0.01em;
+}
+
+.pa-chip-time {
+  font-weight: 800;
+  font-size: 15px;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+.pa-chip-gate,
+.pa-chip-by {
+  font-size: 10px;
+  color: rgba(255, 255, 255, 0.62);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.pa-chip-by {
+  text-align: right;
+}
+
+.pa-chip-warn {
+  border-color: rgba(234, 179, 8, 0.55);
+  background: rgba(234, 179, 8, 0.14);
+}
+
+.pa-chip-crit {
+  border-color: rgba(249, 115, 22, 0.7);
+  background: rgba(249, 115, 22, 0.2);
+}
+
+.pa-chip-over {
+  border-color: #ef4444;
+  background: rgba(239, 68, 68, 0.32);
+  animation: pa-pulse 1.1s ease-in-out infinite;
+}
+
+@keyframes pa-pulse {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.55);
+  }
+  50% {
+    box-shadow: 0 0 0 7px rgba(239, 68, 68, 0);
+  }
+}
+
+.pa-barside {
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 4px;
+  padding-left: 8px;
+  border-left: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.pa-sync {
+  font-size: 10px;
+  color: rgba(255, 255, 255, 0.45);
+  white-space: nowrap;
+  max-width: 210px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.pa-sync-bad {
+  color: #fca5a5;
+}
+
+.pa-gear {
+  font-size: 10px;
+  padding: 3px 8px;
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: transparent;
+  color: rgba(255, 255, 255, 0.75);
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.pa-gear:hover {
+  border-color: rgba(255, 255, 255, 0.5);
+  color: #fff;
+}
+
+/* ── the alert banner ────────────────────────────────────────────────── */
+
+.pa-banner {
+  position: fixed;
+  top: 0;
+  left: 50%;
+  transform: translate(-50%, -140%);
+  z-index: 1000;
+  min-width: min(94vw, 520px);
+  padding: 16px 26px;
+  border-radius: 0 0 14px 14px;
+  text-align: center;
+  color: #fff;
+  transition: transform 0.28s cubic-bezier(0.2, 0.9, 0.3, 1.2);
+  box-shadow: 0 12px 44px rgba(0, 0, 0, 0.55);
+  pointer-events: none;
+}
+
+.pa-banner.show {
+  transform: translate(-50%, 0);
+}
+
+.pa-warn {
+  background: linear-gradient(180deg, #b45309, #92400e);
+}
+
+.pa-overdue {
+  background: linear-gradient(180deg, #dc2626, #991b1b);
+  animation: pa-flash 0.85s steps(2, end) infinite;
+}
+
+@keyframes pa-flash {
+  50% {
+    filter: brightness(1.45);
+  }
+}
+
+.pa-banner-head {
+  font-size: clamp(20px, 4vw, 30px);
+  font-weight: 900;
+  letter-spacing: 0.03em;
+  line-height: 1.1;
+}
+
+.pa-banner-sub {
+  font-size: clamp(12px, 2vw, 15px);
+  opacity: 0.92;
+  margin-top: 4px;
+}
+
+/* ── per-row badge ───────────────────────────────────────────────────── */
+
+.pa-cartby {
+  grid-column: 1 / -1;
+  margin-top: 6px;
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.55);
+  border-top: 1px dashed rgba(255, 255, 255, 0.14);
+  padding-top: 5px;
+}
+
+.pa-cartby.pa-soon {
+  color: #fbbf24;
+}
+
+.pa-cartby.pa-over {
+  color: #fca5a5;
+}
+
+.pa-cartby.pa-done {
+  color: #6ee7a8;
+}
+
+/* Keep the board's own content clear of the fixed bottom bar. */
+.rows-wrap {
+  padding-bottom: 84px;
+}
+
+@media (max-width: 640px) {
+  .pa-barside {
+    display: none;
+  }
+  .pa-chip {
+    padding: 5px 9px;
+  }
+}
+
+@media print {
+  .pa-barwrap,
+  .pa-banner {
+    display: none !important;
+  }
+}
+
+/* Wrong-timezone warning — deliberately impossible to ignore, because every
+   deadline on the screen is wrong while it is showing. */
+.pa-clockwarn {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 1100;
+  padding: 12px 18px;
+  background: #7f1d1d;
+  color: #fff;
+  font-size: 13.5px;
+  line-height: 1.5;
+  text-align: center;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+}

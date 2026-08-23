@@ -174,6 +174,7 @@ export function projectDay(
       actual_out: null,
       paxCount: pax,
       source: "baseline",
+      schedSource: "baseline",
       confidence: overdue ? confidence : Math.round(confidence * 0.9 * 100) / 100,
       operator: slot.operator,
       bagEstimate: bags,

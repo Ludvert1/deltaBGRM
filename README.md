@@ -19,6 +19,7 @@ It replaces two things from the old package: the Cloudflare Worker (now a Next.j
 | `/api/ingest` | Where the board pushes its workflow state |
 | `/api/reports` | List reports · `POST` to generate one |
 | `/api/reports/{id}?format=html` | A printable report |
+| `/api/steps` | The accountability view: every step, its timestamp, who recorded it, and what a late departure is attributable to |
 | `/api/cron/poll` | Heartbeat: learn the schedule, snapshot state |
 | `/api/cron/report` | Build and store a report |
 
@@ -43,6 +44,48 @@ If you use the bundled `/board`, you don't even need that: it points at its own 
 
 ---
 
+## The chain it tracks
+
+Each departure moves through five steps on the board. Every one is stamped with an ISO timestamp, the agent's initials **and** their employee ID, captured through a credentials prompt the agent cannot skip:
+
+```
+assigned  →  exitScanned  →  cartOut  →  deliveredAtGate  →  complete
+   lead        scanner       bag room      delivery agent      lead
+```
+
+**Cart Out is the pivot**, because it is the only step with a hard, computable deadline:
+
+```
+carts must leave the bag room by  =  ETD − bag cutoff (45 min) − tow time from that pier
+```
+
+Tow times default to 6/7/9/11 minutes for piers A/B/C/D. **Walk your own routes with a stopwatch and set them** — Ops Entry → ⏱ Tow times on the board, or `CART_TRANSIT_MINUTES` in `src/lib/config.ts`. A two-minute error there is a two-minute error on every alert the system ever raises.
+
+### Alerts for the bag room agent
+
+The stock board chimed once, at the cutoff, whether or not the cart had already gone. Now:
+
+* **T−10, T−5 and T−0** before the *cart departure* deadline — banner, chime, and a system notification at zero so it still lands when the tab is in the background
+* **Repeats every minute while overdue**, until Cart Out is recorded
+* **Goes silent the instant an agent presses Cart Out** — no nagging about a cart that already left
+* A standing **"Carts out next"** bar along the bottom, live countdowns, tap to open the flight
+* A **"CARTS BY 5:27 AM"** badge on each row, flipping to the actual time once out
+
+There is also a guard you will hopefully never see: if a device's clock is more than five minutes off Austin time, a red banner says so. Every deadline on that screen would otherwise be silently wrong by exactly that much.
+
+### Where the fault was
+
+After a late departure, `/api/steps` and every report answer the question directly. Actual off-blocks comes from ADS-B — real, not self-reported — and is compared against the scheduled time. If the flight went late, the platform names **the first step that missed its target**, and who owned it:
+
+> **DL 2011 — Exit Scanned, 15 min late (AM)**
+> Exit Scanned was due 55 min before departure and was recorded at 12:55 PM, 15 min behind target. Departure went 16 min late.
+
+*First* step, not worst. A late exit scan is what makes the cart late, and the cart crew should not carry a delay they inherited. Where the record will not support an attribution — steps unlogged, or every logged step inside target — it says **inconclusive** and explains why, rather than guessing at a name.
+
+The per-agent roll-up shows steps recorded, steps that missed target, and departures faulted. A high step count with few late steps is the pattern to look for; the number to be careful with is the last column.
+
+---
+
 ## Read this before you trust a cancellation
 
 You picked **OpenSky** as the data source. It is genuinely free and genuinely live — the platform is pulling real Delta departures off Austin right now. But it is an **ADS-B network, not an airline feed**, and that has a hard consequence:
@@ -58,7 +101,9 @@ So the platform does the only honest thing available:
 
 **What you give up without a schedule source:** gate numbers (so pier and team-lead auto-assignment stays blank), published scheduled times for flights the platform has not yet observed, and any authoritative cancellation flag.
 
-**How to get all of that back:** set `AEROAPI_KEY`. FlightAware AeroAPI is the only source here with real `cancelled` flags, gates and published times; its Personal tier includes a monthly usage credit. The driver is already written and dark — one env var and it becomes primary, with OpenSky dropping to a cross-check role. Nothing else changes.
+**The free way to get a forward schedule.** The board already has a bulk-paste parser for the departure list your team pulls from Delta's own system — flight number, scheduled time, gate, destination, equipment. Paste it once (Ops Entry → Paste) and the platform keeps it: as today's schedule, and as a weekday pattern that projects forward on its own. That gives real times and real gates, from data the team was already entering, with no key at all. ADS-B then supplies the one thing a paste cannot — what actually happened, and when the aircraft really left. **On-time performance is only ever measured against a pasted or published schedule**, never against a time inferred from the aircraft's own movement, which would score every flight a perfect 100%.
+
+**Or set `AEROAPI_KEY` and skip the paste.** FlightAware AeroAPI is the only source here with real `cancelled` flags, gates and published times; its Personal tier includes a monthly usage credit. The driver is already written and dark — one env var and it becomes primary, with OpenSky dropping to a cross-check role. Nothing else changes.
 
 The console, `/api/feed?verbose=1`, and every generated report state this in plain language wherever inference is involved. That is deliberate: a bag room that pulls bags off a flight because a dashboard guessed wrong is worse off than one with no dashboard.
 
@@ -147,4 +192,6 @@ npm run build-board  # regenerate public/board.html
 * **Bag and cart numbers are modelled**, from seat counts and an assumed load factor — not from BSM/BPM data. They size the work; they are not a bag count.
 * **Destinations fill in late.** OpenSky only resolves a flight's arrival airport after it lands, so a just-departed flight shows a blank destination until either the baseline has learned that route or AeroAPI is configured.
 * **The learned schedule needs about a week** before suspected-cancellation detection is dependable. The console tells you exactly where it stands.
+* **Attribution is only as good as the button presses behind it.** A step nobody logged cannot be judged, and the platform will say so rather than blame the next agent in the chain.
+* **Every deadline is computed from the device's own clock.** The board warns loudly on a drift over five minutes, but a device in the wrong timezone is the one failure mode that makes everything else quietly wrong.
 * **Not affiliated with Delta Air Lines.** Flight data comes from the OpenSky Network, the FAA NAS Status service, and optionally FlightAware.
