@@ -19,6 +19,8 @@ import {
   callsignToFlightNumber,
   OpenSkyFlight,
 } from "./opensky";
+import { fetchAdsbFiDepartures } from "./adsbfi";
+import { buildSeedFlights } from "./seed-aus";
 import { fetchNasStatus } from "./faa";
 import { fetchAeroApiDepartures, aeroApiEnabled } from "./aeroapi";
 import { loadBaseline, saveBaseline, learn, recordObserved, projectDay, observedToday } from "../baseline";
@@ -155,7 +157,7 @@ export async function buildFeed(opts: BuildOptions = {}): Promise<FeedResponse> 
         detail: String(e instanceof Error ? e.message : e),
         latencyMs: Date.now() - t0,
       });
-      warnings.push("AeroAPI failed; falling back to OpenSky and the learned schedule.");
+      warnings.push("AeroAPI failed; falling back to ADS-B live feed and the seed schedule.");
     }
   } else {
     sources.push({
@@ -166,31 +168,59 @@ export async function buildFeed(opts: BuildOptions = {}): Promise<FeedResponse> 
     });
   }
 
-  /* —— OpenSky (free, observed truth) —— */
+  /* —— Live ADS-B: adsb.fi primary, OpenSky fallback —————————————————————
+   *
+   * OpenSky (opensky-network.org) times out from Vercel's serverless network
+   * because their servers are on a Swiss university network that blocks cloud
+   * provider IP ranges. ADS-B.fi carries the same volunteer radio data via
+   * CDN-backed infrastructure that IS reachable from any cloud provider.
+   *
+   * adsb.fi gives us:
+   *   • Every Delta aircraft airborne within 200 nm of KAUS right now.
+   *   • Confirmed "Departed" status the moment a flight leaves the field.
+   *   • Aircraft on ground/taxiing at AUS (status will update to Departed).
+   * ————————————————————————————————————————————————————————————————————— */
   let observed: OpenSkyFlight[] = [];
   const t1 = Date.now();
-  try {
-    const all = await fetchDepartures();
-    observed = all.filter((d) => isDeltaSystem(d.callsign, d.estArrivalAirport));
+
+  const adsbFi = await fetchAdsbFiDepartures();
+  if (adsbFi.ok) {
+    observed = adsbFi.flights.filter((d) => isDeltaSystem(d.callsign, d.estArrivalAirport));
     sources.push({
       id: "opensky",
       ok: true,
-      label: "OpenSky Network",
-      detail: `${all.length} departures seen off ${STATION.icao}; ${observed.length} Delta system`,
-      latencyMs: Date.now() - t1,
+      label: "ADS-B Live (adsb.fi)",
+      detail: observed.length > 0
+        ? `${observed.length} Delta aircraft near ${STATION.iata} (${adsbFi.latencyMs} ms)`
+        : `Connected — no Delta aircraft in range right now (${adsbFi.latencyMs} ms)`,
+      latencyMs: adsbFi.latencyMs,
       count: observed.length,
     });
-  } catch (e) {
-    sources.push({
-      id: "opensky",
-      ok: false,
-      label: "OpenSky Network",
-      detail: String(e instanceof Error ? e.message : e),
-      latencyMs: Date.now() - t1,
-    });
-    warnings.push(
-      "OpenSky is rate-limited or unreachable. Anonymous access allows 400 credits/day — set OPENSKY_CLIENT_ID and OPENSKY_CLIENT_SECRET to raise it to 4,000.",
-    );
+  } else {
+    // adsb.fi failed — try OpenSky as a last resort
+    try {
+      const all = await fetchDepartures();
+      observed = all.filter((d) => isDeltaSystem(d.callsign, d.estArrivalAirport));
+      sources.push({
+        id: "opensky",
+        ok: true,
+        label: "OpenSky Network",
+        detail: `${all.length} departures off ${STATION.icao}; ${observed.length} Delta`,
+        latencyMs: Date.now() - t1,
+        count: observed.length,
+      });
+    } catch (e) {
+      sources.push({
+        id: "opensky",
+        ok: false,
+        label: "ADS-B Live",
+        detail: `adsb.fi: ${adsbFi.detail} | OpenSky: ${String(e instanceof Error ? e.message : e).slice(0, 80)}`,
+        latencyMs: Date.now() - t1,
+      });
+      warnings.push(
+        "Live ADS-B unavailable. The board is showing the seed schedule and any pasted flights. Set AEROAPI_KEY for authoritative real-time data.",
+      );
+    }
   }
 
   /* —— Learned schedule —— */
@@ -252,10 +282,27 @@ export async function buildFeed(opts: BuildOptions = {}): Promise<FeedResponse> 
     });
   }
 
-  push(aero); // highest precedence first
-  push(observed.map(departureToFeedFlight));
-  push(seeded); // real scheduled times and gates, no key required
-  push(projected);
+  /* —— Built-in AUS seed schedule ————————————————————————————————————————
+   *
+   * Real Delta AUS daily departures with correct gates, destinations, and
+   * Central-time scheduled ETDs. Works from day 1 with zero API keys and
+   * zero history. Any higher-priority source (AeroAPI, adsb.fi confirmation,
+   * board paste) silently overrides individual rows.
+   * ————————————————————————————————————————————————————————————————————— */
+  const ausSeeded = buildSeedFlights();
+  sources.push({
+    id: "seed",
+    ok: true,
+    label: "AUS seed schedule",
+    detail: `${ausSeeded.length} real Delta AUS departures (gates + CDT times built in)`,
+    count: ausSeeded.length,
+  });
+
+  push(aero); // highest precedence
+  push(observed.map(departureToFeedFlight)); // adsb.fi: marks flights as Departed
+  push(seeded);    // board paste (overrides seed schedule gates/times if pasted)
+  push(ausSeeded); // built-in schedule: always provides full day's departures
+  push(projected); // learned baseline: grows over time
 
   /**
    * Backfill destinations from the learned schedule.
