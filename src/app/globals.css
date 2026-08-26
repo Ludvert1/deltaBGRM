@@ -1,53 +1,94 @@
 @import "tailwindcss";
 
+/* ─── Delta AUS Ops Platform ─ Dark command-center theme ─── */
 :root {
-  --bg: #f5f7fa;
-  --panel: #ffffff;
-  --line: #e2e7ee;
-  --fg: #10151c;
-  --dim: #5c6675;
-  --accent: #0b63c5;
-  --red: #c62828;
-  --amber: #b26a00;
-  --green: #1b7a45;
-}
+  /* Core surfaces */
+  --bg:            #080C14;
+  --bg-panel:      #0D1522;
+  --bg-raised:     #141D2F;
+  --bg-input:      #111927;
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --bg: #0b0f14;
-    --panel: #141a21;
-    --line: #232c37;
-    --fg: #e9eef4;
-    --dim: #93a1b1;
-    --accent: #8ab4f8;
-    --red: #ef5350;
-    --amber: #e0a020;
-    --green: #4caf80;
-  }
+  /* Borders */
+  --line:          #1C2840;
+  --line-bright:   #253352;
+
+  /* Text */
+  --fg:            #D4DCE8;
+  --dim:           #566880;
+  --mid:           #8DA4C0;
+
+  /* Brand */
+  --delta-red:     #E01933;
+  --delta-red-dim: #6B0D18;
+  --delta-gold:    #FFB81C;
+  --delta-gold-dim:#664A07;
+
+  /* Status */
+  --green:         #10B981;
+  --green-dim:     #064330;
+  --amber:         #F59E0B;
+  --amber-dim:     #5C3A00;
+  --red:           #EF4444;
+  --red-dim:       #5C1414;
+  --blue:          #3B82F6;
+  --blue-dim:      #1B3668;
+
+  /* Accent (interactive) */
+  --accent:        #3B82F6;
 }
 
 @theme inline {
-  --color-bg: var(--bg);
-  --color-panel: var(--panel);
-  --color-line: var(--line);
-  --color-fg: var(--fg);
-  --color-dim: var(--dim);
-  --color-accent: var(--accent);
-  --color-red: var(--red);
-  --color-amber: var(--amber);
-  --color-green: var(--green);
+  --color-bg:           var(--bg);
+  --color-bg-panel:     var(--bg-panel);
+  --color-bg-raised:    var(--bg-raised);
+  --color-line:         var(--line);
+  --color-line-bright:  var(--line-bright);
+  --color-fg:           var(--fg);
+  --color-dim:          var(--dim);
+  --color-mid:          var(--mid);
+  --color-delta-red:    var(--delta-red);
+  --color-delta-gold:   var(--delta-gold);
+  --color-green:        var(--green);
+  --color-amber:        var(--amber);
+  --color-red:          var(--red);
+  --color-blue:         var(--blue);
+  --color-accent:       var(--accent);
 }
 
-html,
-body {
+html, body {
   background: var(--bg);
   color: var(--fg);
   font-family: ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
     "Helvetica Neue", Arial, sans-serif;
 }
 
-code,
-pre,
-.mono {
+code, pre, .mono {
   font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
 }
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: var(--bg); }
+::-webkit-scrollbar-thumb { background: var(--line-bright); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--dim); }
+
+/* Pulse animation for live indicator */
+@keyframes pulse-ring {
+  0%   { box-shadow: 0 0 0 0 rgba(16,185,129,.6); }
+  70%  { box-shadow: 0 0 0 6px rgba(16,185,129,0); }
+  100% { box-shadow: 0 0 0 0 rgba(16,185,129,0); }
+}
+.pulse { animation: pulse-ring 2s infinite; }
+
+/* Toast slide-in */
+@keyframes slide-in {
+  from { transform: translateX(110%); opacity: 0; }
+  to   { transform: translateX(0);    opacity: 1; }
+}
+.toast-enter { animation: slide-in 0.25s ease-out; }
+
+@keyframes fade-out {
+  from { opacity: 1; }
+  to   { opacity: 0; transform: translateX(30px); }
+}
+.toast-exit { animation: fade-out 0.2s ease-in forwards; }
