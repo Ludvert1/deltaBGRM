@@ -2178,7 +2178,16 @@ function saveFlights() { try { localStorage.setItem(LS_FLIGHTS, JSON.stringify(f
 function loadSettings() {
   try {
     const raw = localStorage.getItem(LS_SETTINGS);
-    if (raw) return JSON.parse(raw);
+    if (raw) {
+      const s = JSON.parse(raw);
+      // Always clear testTime — board must use the real device clock.
+      // testTime is only for development; never let it persist to production.
+      if (s.testTime) {
+        s.testTime = '';
+        localStorage.setItem(LS_SETTINGS, JSON.stringify(s));
+      }
+      return s;
+    }
   } catch (e) {}
   return {
     station: 'AUS', cutoffBuffer: 45, prepWindow: 15, imminentWindow: 5,
@@ -2221,6 +2230,8 @@ function parseTimeToMinutes(s) {
   return null;
 }
 function nowMinutes() {
+  // Always use the real device clock in America/Chicago (Central) time.
+  // testTime is cleared on load; this code is kept as a safety fallback.
   if (settings.testTime) {
     const t = parseTimeToMinutes(settings.testTime);
     if (t != null) {
@@ -2228,8 +2239,23 @@ function nowMinutes() {
       return t + elapsed;
     }
   }
-  const d = new Date();
-  return d.getHours() * 60 + d.getMinutes() + d.getSeconds() / 60;
+  // Use Intl to get the device's current time expressed in Central timezone,
+  // so the board is correct even if the device OS clock is in a different zone.
+  try {
+    const now = new Date();
+    const parts = new Intl.DateTimeFormat('en-US', {
+      timeZone: 'America/Chicago',
+      hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false
+    }).formatToParts(now);
+    const p = {};
+    parts.forEach(pt => { p[pt.type] = pt.value; });
+    const h = Number(p.hour) % 24;  // Intl can emit "24" at midnight
+    return h * 60 + Number(p.minute) + Number(p.second) / 60;
+  } catch (e) {
+    // Fallback to device local time if Intl fails
+    const d = new Date();
+    return d.getHours() * 60 + d.getMinutes() + d.getSeconds() / 60;
+  }
 }
 function fmtCountdown(diffMin) {
   if (diffMin == null) return '—';

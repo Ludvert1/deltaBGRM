@@ -298,11 +298,11 @@ export async function buildFeed(opts: BuildOptions = {}): Promise<FeedResponse> 
     count: ausSeeded.length,
   });
 
-  push(aero); // highest precedence
-  push(observed.map(departureToFeedFlight)); // adsb.fi: marks flights as Departed
-  push(seeded);    // board paste (overrides seed schedule gates/times if pasted)
-  push(ausSeeded); // built-in schedule: always provides full day's departures
-  push(projected); // learned baseline: grows over time
+  push(aero);                              // 1. AeroAPI — authoritative (key req'd)
+  push(observed.map(departureToFeedFlight)); // 2. adsb.fi — confirms airborne departures
+  push(ausSeeded);    // 3. Seed schedule FIRST: establishes Departed/Scheduled status
+  push(seeded);       // 4. Board paste enriches gates/times without downgrading status
+  push(projected);    // 5. Learned baseline — grows over days
 
   /**
    * Backfill destinations from the learned schedule.
@@ -332,10 +332,15 @@ export async function buildFeed(opts: BuildOptions = {}): Promise<FeedResponse> 
    * worth showing the floor; an hour and a half is very likely a cancellation.
    * None of it is asserted as fact — the note carries the reasoning and the
    * hard `cancelled` flag is never set from inference.
+   *
+   * Do NOT age rows that the seed already marked "Departed" — those are
+   * flights we KNOW left (the seed schedule computed minsAgo > 20 and set
+   * actual_out). Only age flights that are still "Scheduled".
    */
   const nowMs = Date.now();
   for (const f of byKey.values()) {
-    if (f.actual_out || f.cancelled || f.source === "aeroapi") continue;
+    if (f.status === "Departed" || f.status === "Canceled" || f.cancelled) continue;
+    if (f.source === "aeroapi") continue;
     if (!f.scheduled_out) continue;
     const lateBy = Math.round((nowMs - new Date(f.scheduled_out).getTime()) / 60_000);
     if (lateBy > 90) {
@@ -349,7 +354,37 @@ export async function buildFeed(opts: BuildOptions = {}): Promise<FeedResponse> 
     }
   }
 
-  const flights = [...byKey.values()].sort((a, b) => {
+  /**
+   * Time-window filter — only show flights relevant to the current shift.
+   *
+   * The board is a live operational tool. A completed 6 AM flight has no
+   * bagroom value at 9 PM. We keep:
+   *   • Departed/Completed flights: up to 90 minutes after their ETD
+   *   • Scheduled/Upcoming flights: up to 12 hours ahead
+   *   • Cancelled/Diverted: always shown (need awareness)
+   *
+   * This prevents the board from filling up with yesterday's history and
+   * showing the right active window automatically.
+   */
+  const SHOW_DEPARTED_MINS  = 90;   // keep departed flights for 90 min
+  const SHOW_UPCOMING_MINS  = 12 * 60; // show flights up to 12h ahead
+
+  const nowMs2 = Date.now();
+  const windowedFlights = [...byKey.values()].filter(f => {
+    if (f.cancelled || f.diverted || f.status === "Canceled" || f.status === "Diverted") {
+      return true; // always show cancelled/diverted for awareness
+    }
+    const etdIso = f.estimated_out || f.scheduled_out || f.actual_out;
+    if (!etdIso) return true; // keep if no time info
+    const etdMs = new Date(etdIso).getTime();
+    const minsFromNow = (etdMs - nowMs2) / 60_000; // negative = past, positive = future
+    if (f.status === "Departed" || f.actual_out) {
+      return minsFromNow >= -SHOW_DEPARTED_MINS; // departed within last 90 min
+    }
+    return minsFromNow <= SHOW_UPCOMING_MINS; // scheduled within next 12h
+  });
+
+  const flights = windowedFlights.sort((a, b) => {
     const ta = new Date(a.estimated_out || a.scheduled_out || a.actual_out || 0).getTime();
     const tb = new Date(b.estimated_out || b.scheduled_out || b.actual_out || 0).getTime();
     return ta - tb;
