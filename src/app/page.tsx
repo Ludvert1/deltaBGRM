@@ -87,7 +87,7 @@ export default async function Console() {
       />
 
       {/* ── Body ── */}
-      <main className="mx-auto w-full max-w-6xl flex-1 space-y-5 px-5 py-5 pb-16">
+      <main className="mx-auto w-full max-w-6xl flex-1 space-y-5 px-3 py-4 pb-16 sm:px-5 sm:py-5">
 
         {/* FAA banner */}
         {nasNote && nasNote !== "No FAA programs affecting AUS or its Delta destinations" && (

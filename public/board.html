@@ -241,9 +241,16 @@ body {
   overflow-y: auto;
   overflow-x: hidden;
 }
-.rows-wrap::-webkit-scrollbar { width: 6px; }
-.rows-wrap::-webkit-scrollbar-track { background: var(--bg-2); }
-.rows-wrap::-webkit-scrollbar-thumb { background: var(--delta-blue); border-radius: 3px; }
+.rows-wrap { scrollbar-width: auto; scrollbar-color: var(--gold-bright) var(--bg-2); }
+.rows-wrap::-webkit-scrollbar { width: 10px; }
+.rows-wrap::-webkit-scrollbar-track { background: var(--bg-2); border-left: 1px solid rgba(255,184,28,0.15); }
+.rows-wrap::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, var(--gold-bright) 0%, #C8910A 100%);
+  border-radius: 5px;
+  border: 2px solid var(--bg-2);
+  min-height: 48px;
+}
+.rows-wrap::-webkit-scrollbar-thumb:hover { background: var(--gold-bright); }
 
 .row {
   display: grid;
@@ -254,7 +261,7 @@ body {
   background: var(--row-base);
   border-bottom: 1px solid var(--row-line);
   transition: background 0.3s ease;
-  min-height: 6.5vh;
+  min-height: 4.8vh;
   cursor: pointer;
 }
 .row:nth-child(even) { background: var(--row-alt); }
@@ -1498,152 +1505,140 @@ body.view-lead .lead-card { display: grid; }
 }
 
 /* ============ RESPONSIVE — TABLET / LAPTOP (≤ 1280px) ============ */
+/* ═══ RESPONSIVE: fits every screen without zooming ═══ */
+
+/* ─── Laptop (≤ 1280px): table with fewer cols ─── */
 @media (max-width: 1280px) {
   .kpi-strip { grid-template-columns: repeat(3, 1fr); }
-  .row, .table-header { grid-template-columns: 1.4fr 1.4fr 1.3fr 0.7fr 1fr 0.7fr; gap: 1vw; }
+  .row, .table-header {
+    grid-template-columns: 1.3fr 1.3fr 1.3fr 0.65fr 0.8fr 0.85fr;
+    gap: 0.7vw;
+    padding: 1vh 1.2vw;
+    min-height: 4.6vh;
+  }
   .row .sched, .table-header .col-sched,
   .row .cartout-cell, .table-header .col-cartout,
   .row .crew-cell, .table-header .col-crew { display: none; }
 }
 
-/* ============ RESPONSIVE — MOBILE / NARROW (≤ 900px) ============ */
+/* ─── Mobile / narrow (≤ 900px): card layout ─── */
 @media (max-width: 900px) {
   html, body { height: 100vh; height: 100dvh; }
 
-  /* Compact top bar */
-  .topbar {
-    padding: 6px 10px;
-    gap: 8px;
-    grid-template-columns: auto 1fr auto;
-  }
-  .delta-widget { width: 28px; height: 28px; min-width: 28px; min-height: 28px; }
-  .brand { gap: 8px; }
-  .brand-title { font-size: 12px; letter-spacing: 0.06em; white-space: nowrap; }
-  .brand-sub { font-size: 9px; letter-spacing: 0.14em; margin-top: 2px; white-space: nowrap; }
-  .header-title { font-size: 20px; letter-spacing: 0.08em; }
-  .clock-area { gap: 6px; flex-direction: column-reverse; align-items: flex-end; }
-  .clock-block { display: flex; flex-direction: row; align-items: baseline; gap: 6px; }
-  .clock { font-size: 15px; }
+  /* Compact topbar */
+  .topbar { padding: 5px 10px; gap: 6px; grid-template-columns: auto 1fr auto; }
+  .delta-widget { width: 26px; height: 26px; min-width: 26px; min-height: 26px; }
+  .brand { gap: 6px; }
+  .brand-title { font-size: 11px; letter-spacing: 0.04em; white-space: nowrap; }
+  .brand-sub { display: none; }
+  .header-title { font-size: 18px; letter-spacing: 0.06em; }
+  .clock-area { gap: 4px; flex-direction: row; align-items: center; }
+  .clock { font-size: 14px; }
   .clock-date { display: none; }
-  .header-buttons { gap: 4px; flex-direction: column; }
-  .hdr-btn { padding: 4px 7px; font-size: 9px; letter-spacing: 0.06em; min-height: 28px; white-space: nowrap; }
-  .hdr-btn .count { padding: 0 4px; font-size: 9px; min-width: 14px; }
+  .header-buttons { gap: 3px; flex-direction: column; }
+  .hdr-btn { padding: 4px 6px; font-size: 9px; letter-spacing: 0.06em; min-height: 26px; white-space: nowrap; }
+  .hdr-btn .count { padding: 0 3px; font-size: 9px; min-width: 12px; }
 
-  /* KPI strip — horizontal scroll */
+  /* KPI strip — 2-column grid for readability (no horizontal scroll) */
   .kpi-strip {
-    display: flex;
-    overflow-x: auto;
-    overflow-y: hidden;
-    grid-template-columns: none;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 4px;
+    padding: 4px 8px;
+    overflow: visible;
   }
-  .kpi-strip::-webkit-scrollbar { height: 4px; }
-  .kpi-strip::-webkit-scrollbar-thumb { background: var(--gold); }
-  .kpi-tile {
-    flex: 0 0 38vw;
-    min-width: 140px;
-    max-width: 180px;
-    padding: 7px 11px;
-    min-height: 56px;
-  }
-  .kpi-label { font-size: 10px; }
-  .kpi-value { font-size: 20px; }
-  .kpi-sub { font-size: 11px; }
+  .kpi-tile { min-height: 52px; padding: 8px 10px; border-radius: 6px; flex: none; }
+  .kpi-label { font-size: 9px; letter-spacing: 0.05em; }
+  .kpi-value { font-size: 22px; }
+  .kpi-sub { font-size: 10px; }
 
   /* View banner */
-  .view-banner { padding: 6px 10px; font-size: 11px; flex-wrap: wrap; gap: 6px; }
-  .view-banner .vb-tag { font-size: 10px; padding: 3px 7px; }
+  .view-banner { padding: 5px 10px; font-size: 11px; flex-wrap: wrap; gap: 5px; }
+  .view-banner .vb-tag { font-size: 10px; padding: 2px 6px; }
   .view-banner .vb-detail { font-size: 10px; }
-  .view-banner .vb-back { font-size: 10px; padding: 3px 7px; margin-left: auto; }
+  .view-banner .vb-back { font-size: 10px; padding: 2px 6px; margin-left: auto; }
 
   /* Hide table header — cards self-label */
   .table-header { display: none; }
 
-  /* Scrollbar visible on mobile */
-  .rows-wrap { overflow-y: scroll; scrollbar-width: thin; }
-  .rows-wrap::-webkit-scrollbar { width: 12px; }
+  /* Scrollbar — visible on mobile */
+  .rows-wrap {
+    overflow-y: scroll;
+    scrollbar-width: auto;
+    scrollbar-color: var(--gold-bright) var(--bg-2);
+  }
+  .rows-wrap::-webkit-scrollbar { width: 8px; }
   .rows-wrap::-webkit-scrollbar-track { background: var(--bg-2); }
   .rows-wrap::-webkit-scrollbar-thumb {
     background: linear-gradient(180deg, var(--gold-bright), #C8910A);
-    border-radius: 6px;
-    border: 2px solid var(--bg-2);
-    min-height: 80px;
+    border-radius: 4px;
+    min-height: 60px;
   }
 
-  /* Compact card-style rows for projection/pier views on mobile */
+  /* Card layout — each flight as a readable card */
   .row {
     display: grid;
-    grid-template-columns: 1.3fr 1fr 0.6fr;
+    grid-template-columns: 1fr auto;
     grid-template-areas:
-      "flight  timer   gate"
-      "status  dest    dest"
-      "carts   carts   carts";
+      "flight  gate"
+      "etd     dest"
+      "timer   timer"
+      "carts   carts";
     padding: 10px 12px;
-    gap: 4px 10px;
+    gap: 2px 10px;
     min-height: auto;
+    align-items: start;
   }
-  .flight-cell { grid-area: flight; }
-  .timer-cell { grid-area: timer; align-self: center; }
-  .gate-cell { grid-area: gate; align-self: center; }
-  .status-cell {
-    grid-area: status;
-    flex-direction: row;
-    align-items: center;
-    flex-wrap: wrap;
-    gap: 6px;
-  }
-  .dest {
-    grid-area: dest;
-    text-align: right;
-    align-self: center;
-    line-height: 1;
-  }
+  .flight-cell  { grid-area: flight; }
+  .sched        { grid-area: etd; }
+  .timer-cell   { grid-area: timer; }
+  .gate-cell    { grid-area: gate; text-align: right; }
+  .dest         { grid-area: dest; text-align: right; align-self: start; }
   .carts-cell {
     grid-area: carts;
     flex-direction: row;
+    flex-wrap: wrap;
     align-items: center;
-    gap: 10px;
-    padding-top: 6px;
+    gap: 6px;
+    padding-top: 8px;
     border-top: 1px solid var(--row-line);
     margin-top: 4px;
   }
-  .row .sched, .row .cartout-cell, .row .crew-cell { display: none; }
+  .row .sched, .row .cartout-cell, .row .crew-cell, .row .status-cell { display: none; }
   .row.r-critical { padding-left: 8px; }
 
-  /* Resize fonts for mobile */
-  .flight { font-size: 18px; }
-  .pier-badge { width: 22px; height: 22px; font-size: 11px; }
-  .tail-small { font-size: 11px; }
-  .timer { font-size: 22px; }
-  .row.r-critical .timer { font-size: 16px; }
-  .cutoff-time { font-size: 13px; }
-  .status-pill { font-size: 9px; padding: 2px 7px; }
-  .gate { font-size: 24px; }
-  .dest { font-size: 22px; }
-  .carts { font-size: 18px; }
-
-  /* Lead view — already vertically-stacked, just tighten */
-  body.view-lead .row { padding: 12px 14px; }
+  /* Mobile font scale */
+  .flight { font-size: 17px; }
+  .pier-badge { width: 20px; height: 20px; font-size: 10px; }
+  .tail-small { display: none; }
+  .timer { font-size: clamp(20px, 5.5vw, 28px); }
+  .cutoff-time { font-size: 12px; }
+  .gate { font-size: 22px; }
+  .dest { font-size: 20px; line-height: 1.1; }
+  .carts { font-size: 17px; }
+  body.view-lead .row { padding: 11px 14px; }
 }
 
-/* ============ RESPONSIVE — VERY NARROW (≤ 420px) ============ */
+/* ─── Very small phones (≤ 420px) ─── */
 @media (max-width: 420px) {
-  .topbar { padding: 6px 8px; }
-  .header-title { font-size: 18px; }
-  .brand-title { font-size: 11px; }
-  .brand-sub { font-size: 8px; }
-  .clock { font-size: 14px; }
-  .delta-widget { width: 26px; height: 26px; min-width: 26px; min-height: 26px; }
-  .hdr-btn { font-size: 9px; padding: 4px 6px; }
+  .topbar { padding: 5px 8px; }
+  .header-title { font-size: 16px; }
+  .brand-title { font-size: 10px; }
+  .clock { font-size: 12px; }
+  .delta-widget { width: 24px; height: 24px; min-width: 24px; min-height: 24px; }
+  .hdr-btn { font-size: 8px; padding: 3px 5px; }
   .drawer, .feedback-drawer { width: 100vw; }
   .form-grid { grid-template-columns: 1fr; gap: 10px; }
   .feedback-options { grid-template-columns: 1fr; }
+  .flight { font-size: 15px; }
+  .timer { font-size: 18px; }
+  .gate { font-size: 18px; }
+  .dest { font-size: 16px; }
 }
 
-/* ============ PHONE-FIRST LAYER (≤ 768px) ============ */
+/* ─── Phone action bar (≤ 768px): fixed bottom bar ─── */
 @media (max-width: 768px) {
   html { -webkit-text-size-adjust: 100%; }
-
-  /* — Bottom action bar: Ops Entry / Handoff / Feedback in thumb reach — */
   .header-buttons {
     position: fixed;
     left: 0; right: 0; bottom: 0;
@@ -1657,174 +1652,7 @@ body.view-lead .lead-card { display: grid; }
   }
   .header-buttons .hdr-btn {
     flex: 1;
-    min-height: 48px;
-    font-size: 12px;
-    letter-spacing: 0.08em;
-    margin: 0 4px;
-    border-radius: 6px;
-    touch-action: manipulation;
-  }
-  /* keep content clear of the bar */
-  .rows-wrap { padding-bottom: calc(70px + env(safe-area-inset-bottom, 0px)); }
-  .toast { bottom: calc(80px + env(safe-area-inset-bottom, 0px)); }
-
-  /* Topbar simplifies to brand + clock */
-  .topbar { grid-template-columns: auto 1fr auto; align-items: center; }
-  .clock-area { flex-direction: row; align-items: center; }
-  .header-title { font-size: 17px; }
-
-  /* — Flight cards: roomier, full-info, whole card tappable — */
-  .row {
-    grid-template-columns: 1.3fr 1fr 0.7fr;
-    grid-template-areas:
-      "flight  timer    gate"
-      "status  dest     dest"
-      "crew    crew     cartout"
-      "carts   carts    carts";
-    padding: 14px 14px 12px;
-    gap: 6px 10px;
-    touch-action: manipulation;
-  }
-  .row:active { background: rgba(255, 184, 28, 0.07); }
-
-  /* Crew chips return on phones — one compact line */
-  .row .crew-cell {
-    display: flex;
-    grid-area: crew;
-    flex-direction: row;
-    flex-wrap: wrap;
-    gap: 4px 12px;
-    align-items: center;
-    padding-top: 6px;
-    border-top: 1px dashed var(--row-line);
-  }
-  .row .crew-cell .crew-line { display: flex; gap: 5px; align-items: baseline; }
-  .row .crew-cell .crew-label { font-size: 9px; }
-  .row .crew-cell .crew-value { font-size: 12px; }
-
-  /* Cart-out time returns when logged */
-  .row .cartout-cell {
-    display: flex;
-    grid-area: cartout;
-    flex-direction: row;
-    justify-content: flex-end;
-    align-items: center;
-    gap: 6px;
-    padding-top: 6px;
-    border-top: 1px dashed var(--row-line);
-  }
-  .row .cartout-cell .cartout-time { font-size: 13px; }
-  .row .cartout-cell .cartout-time.empty { display: none; }
-
-  /* — Carts area stacks: count line, workflow grid, quick-action row — */
-  .carts-cell {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 6px;
-  }
-  .carts-cell .carts {
-    align-self: flex-start;
-    font-size: 16px;
-  }
-  .carts-cell .carts::after {
-    content: " CARTS";
-    font-size: 10px;
-    letter-spacing: 0.14em;
-    color: var(--text-dim);
-  }
-
-  /* — Workflow buttons: real touch targets, 2-up grid — */
-  .status-buttons {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 8px;
-    width: 100%;
-    margin-top: 2px;
-  }
-  .sb-btn {
-    min-height: 46px;
-    font-size: 13px;
-    padding: 8px 10px;
-    border-radius: 6px;
-    border-width: 1.5px;
-    touch-action: manipulation;
-  }
-  .sb-btn:active { transform: scale(0.97); }
-  .quick-actions {
-    display: grid;
-    grid-template-columns: 1fr 1fr 1fr;
-    gap: 8px;
-    width: 100%;
-    margin-top: 2px;
-  }
-  .quick-actions .sb-btn, .quick-actions button, .qa-btn {
-    min-height: 44px;
-    font-size: 12px;
-    border-radius: 6px;
-    touch-action: manipulation;
-  }
-
-  /* — Drawers: full screen, no iOS focus-zoom — */
-  .drawer, .feedback-drawer, .handoff-drawer { width: 100vw; }
-  .drawer input[type="text"], .drawer input[type="number"], .drawer input[type="time"],
-  .drawer select, .drawer textarea,
-  .handoff-drawer textarea, .feedback-drawer input {
-    font-size: 16px !important;   /* prevents iOS auto-zoom on focus */
-    min-height: 44px;
-    border-radius: 6px;
-  }
-  .drawer textarea, .handoff-drawer textarea { min-height: 72px; }
-  .form-grid { grid-template-columns: 1fr; gap: 12px; }
-  .drawer .btn, .handoff-drawer .btn, .feedback-drawer .btn {
-    min-height: 48px;
-    font-size: 14px;
-    touch-action: manipulation;
-  }
-  .btn-row { flex-wrap: wrap; gap: 10px; }
-  .drawer-tab { min-height: 44px; font-size: 12px; }
-
-  /* Settings rows stack with full-width controls (they're grid, not flex) */
-  .settings-row {
-    grid-template-columns: 1fr;
-    gap: 8px;
-  }
-  .settings-row input, .settings-row button { justify-self: stretch; }
-  .settings-row input[type="checkbox"] { justify-self: start; }
-  #s-feed-refresh { justify-self: stretch; min-height: 48px; }
-
-  /* Drawer tabs: single scrollable line */
-  .drawer-tabs {
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
-    scrollbar-width: none;
-  }
-  .drawer-tabs::-webkit-scrollbar { display: none; }
-  .drawer-tab {
-    flex: 0 0 auto;
-    white-space: nowrap;
-    padding: 12px 14px;
-  }
-  .settings-row input[type="text"], .settings-row input[type="number"] {
-    width: 100%;
-    min-width: 0 !important;
-    box-sizing: border-box;
-  }
-  .settings-row input[type="checkbox"] { width: 26px; height: 26px; }
-
-  /* KPI tiles: slightly larger swipe targets */
-  .kpi-tile { flex: 0 0 44vw; min-height: 64px; }
-}
-
-/* ============ PHONE — SMALL (≤ 400px) ============ */
-@media (max-width: 400px) {
-  .row { grid-template-columns: 1.2fr 1fr 0.65fr; padding: 12px 10px 10px; }
-  .flight { font-size: 17px; }
-  .gate { font-size: 22px; }
-  .dest { font-size: 19px; }
-  .timer { font-size: 19px; }
-  .header-buttons .hdr-btn { font-size: 11px; margin: 0 2px; }
-}
-</style>
+    min-height: 48px;</style>
 <style id="platform-addon-styles">
 /* Platform add-on styling — injected by scripts/build-board.mjs.
    Scoped entirely to .pa-* so nothing here can touch the board's own styles.

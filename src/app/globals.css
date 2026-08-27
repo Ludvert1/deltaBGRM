@@ -62,6 +62,19 @@ html, body {
     "Helvetica Neue", Arial, sans-serif;
 }
 
+/* Global scrollbar — visible, gold-accented */
+* { scrollbar-width: thin; scrollbar-color: var(--line-bright) transparent; }
+*:hover { scrollbar-color: var(--delta-gold) transparent; }
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb {
+  background: var(--line-bright);
+  border-radius: 4px;
+  border: 2px solid transparent;
+  background-clip: content-box;
+}
+::-webkit-scrollbar-thumb:hover { background: var(--delta-gold); background-clip: content-box; }
+
 code, pre, .mono {
   font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
 }

@@ -104,6 +104,19 @@ export function buildSeedFlights(): FeedFlight[] {
     const pier      = pierFromGate(row.gate);
     const teamLead  = PIER_TO_LEAD[pier] ?? "";
 
+    // Determine realistic status from the schedule time vs now.
+    // Past flights are almost certainly departed (seed is known-good schedule).
+    // A 20-min grace period avoids flickering right at departure time.
+    const minsAgo   = (today.getTime() - schedUtc.getTime()) / 60_000;
+    let status: FeedFlight["status"];
+    if (row.cancelled) {
+      status = "Canceled";
+    } else if (minsAgo > 20) {
+      status = "Departed";   // past the window — mark departed so analytics doesn't flag as suspected cancel
+    } else {
+      status = "Scheduled";
+    }
+
     out.push({
       flight:           row.flight,
       ident:            row.flight.replace("DL ", "DAL").replace(/\s/g, ""),
@@ -112,27 +125,29 @@ export function buildSeedFlights(): FeedFlight[] {
       gate:             row.gate,
       tail:             "",
       equipment:        "",
-      status:           row.cancelled ? "Canceled" : "Scheduled",
+      status,
       cancelled:        row.cancelled ?? false,
       diverted:         false,
       etd_sched_local:  localStr,
       etd_est_local:    "",
-      etd_actual_local: "",
+      etd_actual_local: status === "Departed" ? localStr : "",
       etd_local:        localStr,
       delayed:          false,
       scheduled_out:    schedIso,
       estimated_out:    null,
-      actual_out:       null,
+      actual_out:       status === "Departed" ? schedIso : null,
       paxCount:         pax,
       source:           "seed",
-      confidence:       0.6,
+      confidence:       status === "Departed" ? 0.85 : 0.6,
       schedSource:      "seed",
       operator:         "DAL",
       pier,
       teamLead,
       bagEstimate:      bags,
       cartEstimate:     carts,
-      note:             "From AUS seed schedule. Updates automatically when ADS-B or AeroAPI supply real data.",
+      note:             status === "Departed"
+        ? `Departed per AUS seed schedule. ADS-B or AeroAPI will confirm exact time.`
+        : `From AUS seed schedule. Updates when ADS-B or AeroAPI supplies real data.`,
     });
   }
 

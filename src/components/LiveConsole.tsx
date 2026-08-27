@@ -179,55 +179,62 @@ export default function LiveConsole({
   return (
     <>
       {/* ── Topbar ── */}
-      <header className="sticky top-0 z-40 flex items-center justify-between gap-4 border-b border-[var(--line)] bg-[var(--bg-panel)] px-5 py-3">
-        <div className="flex items-center gap-3">
-          {/* Delta triangle */}
-          <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-sm bg-[var(--delta-red)]">
-            <svg viewBox="0 0 20 20" className="h-4 w-4 fill-white">
-              <polygon points="10,2 18,18 2,18" />
-            </svg>
+      <header className="sticky top-0 z-40 border-b border-[var(--line)] bg-[var(--bg-panel)]">
+        {/* Main bar */}
+        <div className="flex items-center gap-3 px-4 py-2.5">
+          {/* Logo */}
+          <div className="flex shrink-0 items-center gap-2.5">
+            <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-sm bg-[var(--delta-red)]">
+              <svg viewBox="0 0 20 20" className="h-4 w-4 fill-white">
+                <polygon points="10,2 18,18 2,18" />
+              </svg>
+            </div>
+            <div className="hidden sm:block">
+              <div className="text-[11px] font-bold uppercase tracking-[0.12em] text-[var(--delta-red)]">AUS · Bag Room Ops</div>
+              <div className="text-[10px] text-[var(--dim)]">Delta Air Lines · Austin-Bergstrom</div>
+            </div>
+            <div className="block sm:hidden">
+              <div className="text-[10px] font-bold uppercase tracking-[0.1em] text-[var(--delta-red)] leading-none">AUS OPS</div>
+            </div>
           </div>
-          <div>
-            <div className="text-[11px] font-bold uppercase tracking-[0.12em] text-[var(--delta-red)]">AUS · Bag Room Ops</div>
-            <div className="hidden text-[10px] text-[var(--dim)] sm:block">Delta Air Lines · Austin-Bergstrom</div>
-          </div>
-        </div>
 
-        {/* Central time */}
-        <div className="flex flex-col items-center">
-          <div className="font-mono text-lg font-semibold tabular-nums tracking-tight">
-            {clock}
-            <span className="ml-1.5 text-[10px] font-normal uppercase tracking-widest text-[var(--delta-gold)]">{tz}</span>
+          {/* Central time — takes remaining space, centered */}
+          <div className="flex flex-1 flex-col items-center">
+            <div className="font-mono text-lg font-semibold tabular-nums tracking-tight leading-none">
+              {clock}
+              <span className="ml-1 text-[10px] font-normal uppercase tracking-widest text-[var(--delta-gold)]">{tz}</span>
+            </div>
+            <div className="text-[10px] text-[var(--dim)]">{date}</div>
           </div>
-          <div className="text-[10px] text-[var(--dim)]">{date} · Austin, TX</div>
-        </div>
 
-        {/* Status pill */}
-        <div className="flex items-center gap-3">
-          <div className="hidden items-center gap-1.5 text-[11px] text-[var(--dim)] sm:flex">
-            <span className={`h-2 w-2 rounded-full ${feedStatus === "ok" ? "bg-[var(--green)] pulse" : feedStatus === "warn" ? "bg-[var(--amber)]" : "bg-[var(--red)]"}`} />
-            {feedStatus === "ok" ? `Live · updated ${lastPollAgo}` : "Feed error"}
+          {/* Right: status + CTA */}
+          <div className="flex shrink-0 items-center gap-2">
+            <div className="hidden items-center gap-1.5 text-[11px] text-[var(--dim)] md:flex">
+              <span className={`h-2 w-2 rounded-full ${feedStatus === "ok" ? "bg-[var(--green)] pulse" : feedStatus === "warn" ? "bg-[var(--amber)]" : "bg-[var(--red)]"}`} />
+              {feedStatus === "ok" ? `${lastPollAgo}` : "Error"}
+            </div>
+            <a href="/board" target="_blank"
+              className="rounded-md border border-[var(--delta-red)] bg-[var(--delta-red-dim)] px-2.5 py-1.5 text-[10px] font-bold uppercase tracking-wide text-[var(--delta-red)] transition hover:bg-[var(--delta-red)] hover:text-white whitespace-nowrap">
+              Board ↗
+            </a>
           </div>
-          <a href="/board" target="_blank"
-            className="rounded-md border border-[var(--delta-red)] bg-[var(--delta-red-dim)] px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wide text-[var(--delta-red)] transition hover:bg-[var(--delta-red)] hover:text-white">
-            Open Board ↗
-          </a>
         </div>
       </header>
 
       {/* ── Quick-nav tabs ── */}
-      <nav className="sticky top-[57px] z-30 flex gap-1 overflow-x-auto border-b border-[var(--line)] bg-[var(--bg)] px-5 py-2">
+      <nav className="sticky top-[49px] z-30 flex gap-0.5 overflow-x-auto border-b border-[var(--line)] bg-[var(--bg)] px-3 py-1.5 scrollbar-none"
+           style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
         {[
-          { href: "#glance",   label: "At a Glance" },
-          { href: "#connect",  label: "Connect Board" },
+          { href: "#glance",   label: "Glance" },
+          { href: "#connect",  label: "Connect" },
           { href: "#flights",  label: "Departures" },
-          { href: "#piers",    label: "Pier Load" },
-          { href: "#sources",  label: "Data Sources" },
-          { href: "#state",    label: "Platform State" },
-          { href: "#tools",    label: "Tools & APIs" },
+          { href: "#piers",    label: "Piers" },
+          { href: "#sources",  label: "Sources" },
+          { href: "#state",    label: "Status" },
+          { href: "#tools",    label: "APIs" },
         ].map(({ href, label }) => (
           <a key={href} href={href}
-            className="shrink-0 rounded-md px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wider text-[var(--dim)] transition hover:bg-[var(--bg-raised)] hover:text-[var(--fg)]">
+            className="shrink-0 rounded px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wider text-[var(--dim)] transition hover:bg-[var(--bg-raised)] hover:text-[var(--fg)] whitespace-nowrap">
             {label}
           </a>
         ))}
